@@ -1,0 +1,442 @@
+Neighborhood,Year,own_occ_rate,corp_own_rate
+Allston,2004,0.29,0.07
+Allston,2005,0.3,0.07
+Allston,2006,0.29,0.08
+Allston,2007,0.31,0.08
+Allston,2008,0.31,0.09
+Allston,2009,0.31,0.09
+Allston,2010,0.3,0.09
+Allston,2011,0.3,0.1
+Allston,2012,0.28,0.1
+Allston,2013,0.27,0.11
+Allston,2014,0.26,0.12
+Allston,2015,0.25,0.13
+Allston,2016,0.24,0.14
+Allston,2017,0.24,0.16
+Allston,2018,0.23,0.17
+Allston,2019,0.23,0.18
+Allston,2020,0.22,0.22
+Allston,2021,0.22,0.24
+Allston,2022,0.23,0.25
+Allston,2023,0.23,0.28
+Allston,2024,0.22,0.3
+Beacon Hill,2004,0.34,0.05
+Beacon Hill,2005,0.34,0.06
+Beacon Hill,2006,0.32,0.06
+Beacon Hill,2007,0.33,0.07
+Beacon Hill,2008,0.33,0.07
+Beacon Hill,2009,0.32,0.08
+Beacon Hill,2010,0.32,0.07
+Beacon Hill,2011,0.3,0.07
+Beacon Hill,2012,0.3,0.07
+Beacon Hill,2013,0.31,0.07
+Beacon Hill,2014,0.31,0.08
+Beacon Hill,2015,0.31,0.09
+Beacon Hill,2016,0.31,0.09
+Beacon Hill,2017,0.31,0.12
+Beacon Hill,2018,0.31,0.13
+Beacon Hill,2019,0.31,0.15
+Beacon Hill,2020,0.3,0.2
+Beacon Hill,2021,0.29,0.24
+Beacon Hill,2022,0.3,0.25
+Beacon Hill,2023,0.3,0.28
+Beacon Hill,2024,0.29,0.3
+Brighton,2004,0.44,0.04
+Brighton,2005,0.44,0.04
+Brighton,2006,0.43,0.04
+Brighton,2007,0.45,0.05
+Brighton,2008,0.44,0.05
+Brighton,2009,0.43,0.05
+Brighton,2010,0.43,0.07
+Brighton,2011,0.42,0.07
+Brighton,2012,0.4,0.07
+Brighton,2013,0.39,0.08
+Brighton,2014,0.38,0.09
+Brighton,2015,0.36,0.1
+Brighton,2016,0.35,0.1
+Brighton,2017,0.34,0.11
+Brighton,2018,0.33,0.12
+Brighton,2019,0.33,0.13
+Brighton,2020,0.32,0.16
+Brighton,2021,0.32,0.19
+Brighton,2022,0.32,0.19
+Brighton,2023,0.32,0.21
+Brighton,2024,0.32,0.23
+Central Boston,2004,0.36,0.13
+Central Boston,2005,0.36,0.14
+Central Boston,2006,0.34,0.14
+Central Boston,2007,0.35,0.14
+Central Boston,2008,0.35,0.13
+Central Boston,2009,0.34,0.11
+Central Boston,2010,0.33,0.13
+Central Boston,2011,0.33,0.13
+Central Boston,2012,0.32,0.12
+Central Boston,2013,0.32,0.13
+Central Boston,2014,0.33,0.13
+Central Boston,2015,0.31,0.13
+Central Boston,2016,0.32,0.13
+Central Boston,2017,0.32,0.14
+Central Boston,2018,0.31,0.17
+Central Boston,2019,0.33,0.2
+Central Boston,2020,0.32,0.25
+Central Boston,2021,0.31,0.29
+Central Boston,2022,0.32,0.29
+Central Boston,2023,0.31,0.32
+Central Boston,2024,0.3,0.34
+Charlestown,2004,0.54,0.03
+Charlestown,2005,0.54,0.03
+Charlestown,2006,0.51,0.05
+Charlestown,2007,0.54,0.04
+Charlestown,2008,0.54,0.04
+Charlestown,2009,0.53,0.04
+Charlestown,2010,0.54,0.04
+Charlestown,2011,0.53,0.04
+Charlestown,2012,0.5,0.04
+Charlestown,2013,0.5,0.05
+Charlestown,2014,0.52,0.05
+Charlestown,2015,0.51,0.05
+Charlestown,2016,0.51,0.05
+Charlestown,2017,0.51,0.06
+Charlestown,2018,0.5,0.08
+Charlestown,2019,0.5,0.09
+Charlestown,2020,0.5,0.12
+Charlestown,2021,0.5,0.14
+Charlestown,2022,0.51,0.15
+Charlestown,2023,0.51,0.17
+Charlestown,2024,0.49,0.28
+Chinatown,2004,0.27,0.13
+Chinatown,2005,0.28,0.12
+Chinatown,2006,0.29,0.09
+Chinatown,2007,0.33,0.09
+Chinatown,2008,0.34,0.1
+Chinatown,2009,0.35,0.09
+Chinatown,2010,0.35,0.09
+Chinatown,2011,0.35,0.1
+Chinatown,2012,0.32,0.1
+Chinatown,2013,0.31,0.11
+Chinatown,2014,0.31,0.11
+Chinatown,2015,0.3,0.12
+Chinatown,2016,0.31,0.12
+Chinatown,2017,0.31,0.14
+Chinatown,2018,0.27,0.16
+Chinatown,2019,0.27,0.18
+Chinatown,2020,0.28,0.21
+Chinatown,2021,0.28,0.24
+Chinatown,2022,0.29,0.24
+Chinatown,2023,0.29,0.27
+Chinatown,2024,0.28,0.3
+Dorchester,2004,0.5,0.04
+Dorchester,2005,0.5,0.05
+Dorchester,2006,0.48,0.05
+Dorchester,2007,0.5,0.05
+Dorchester,2008,0.49,0.05
+Dorchester,2009,0.47,0.05
+Dorchester,2010,0.48,0.06
+Dorchester,2011,0.48,0.07
+Dorchester,2012,0.47,0.07
+Dorchester,2013,0.48,0.08
+Dorchester,2014,0.48,0.08
+Dorchester,2015,0.48,0.09
+Dorchester,2016,0.48,0.09
+Dorchester,2017,0.48,0.1
+Dorchester,2018,0.48,0.1
+Dorchester,2019,0.48,0.11
+Dorchester,2020,0.48,0.14
+Dorchester,2021,0.49,0.15
+Dorchester,2022,0.49,0.16
+Dorchester,2023,0.49,0.18
+Dorchester,2024,0.48,0.19
+East Boston,2004,0.47,0.03
+East Boston,2005,0.47,0.03
+East Boston,2006,0.45,0.03
+East Boston,2007,0.46,0.03
+East Boston,2008,0.46,0.04
+East Boston,2009,0.45,0.04
+East Boston,2010,0.46,0.04
+East Boston,2011,0.46,0.04
+East Boston,2012,0.44,0.05
+East Boston,2013,0.43,0.05
+East Boston,2014,0.44,0.05
+East Boston,2015,0.42,0.06
+East Boston,2016,0.41,0.07
+East Boston,2017,0.41,0.09
+East Boston,2018,0.41,0.11
+East Boston,2019,0.4,0.12
+East Boston,2020,0.41,0.17
+East Boston,2021,0.4,0.21
+East Boston,2022,0.42,0.22
+East Boston,2023,0.41,0.22
+East Boston,2024,0.41,0.3
+Fenway,2004,0.23,0.09
+Fenway,2005,0.24,0.13
+Fenway,2006,0.23,0.13
+Fenway,2007,0.24,0.13
+Fenway,2008,0.23,0.15
+Fenway,2009,0.23,0.15
+Fenway,2010,0.23,0.16
+Fenway,2011,0.22,0.16
+Fenway,2012,0.21,0.15
+Fenway,2013,0.21,0.16
+Fenway,2014,0.21,0.17
+Fenway,2015,0.19,0.18
+Fenway,2016,0.19,0.21
+Fenway,2017,0.18,0.22
+Fenway,2018,0.17,0.23
+Fenway,2019,0.17,0.24
+Fenway,2020,0.16,0.27
+Fenway,2021,0.16,0.28
+Fenway,2022,0.16,0.29
+Fenway,2023,0.17,0.35
+Fenway,2024,0.16,0.36
+Hyde Park,2004,0.64,0.02
+Hyde Park,2005,0.64,0.03
+Hyde Park,2006,0.62,0.03
+Hyde Park,2007,0.64,0.03
+Hyde Park,2008,0.64,0.04
+Hyde Park,2009,0.63,0.03
+Hyde Park,2010,0.63,0.03
+Hyde Park,2011,0.63,0.04
+Hyde Park,2012,0.6,0.07
+Hyde Park,2013,0.61,0.07
+Hyde Park,2014,0.62,0.06
+Hyde Park,2015,0.61,0.06
+Hyde Park,2016,0.62,0.05
+Hyde Park,2017,0.62,0.05
+Hyde Park,2018,0.63,0.06
+Hyde Park,2019,0.63,0.06
+Hyde Park,2020,0.64,0.08
+Hyde Park,2021,0.64,0.1
+Hyde Park,2022,0.64,0.1
+Hyde Park,2023,0.64,0.12
+Hyde Park,2024,0.63,0.12
+Jamaica Plain,2004,0.56,0.02
+Jamaica Plain,2005,0.56,0.03
+Jamaica Plain,2006,0.55,0.03
+Jamaica Plain,2007,0.57,0.03
+Jamaica Plain,2008,0.57,0.04
+Jamaica Plain,2009,0.55,0.04
+Jamaica Plain,2010,0.56,0.04
+Jamaica Plain,2011,0.56,0.04
+Jamaica Plain,2012,0.55,0.04
+Jamaica Plain,2013,0.54,0.04
+Jamaica Plain,2014,0.55,0.05
+Jamaica Plain,2015,0.54,0.05
+Jamaica Plain,2016,0.54,0.06
+Jamaica Plain,2017,0.54,0.07
+Jamaica Plain,2018,0.54,0.07
+Jamaica Plain,2019,0.53,0.08
+Jamaica Plain,2020,0.53,0.11
+Jamaica Plain,2021,0.54,0.13
+Jamaica Plain,2022,0.53,0.13
+Jamaica Plain,2023,0.53,0.16
+Jamaica Plain,2024,0.52,0.17
+Longwood,2004,0.3,0.09
+Longwood,2005,0.3,0.09
+Longwood,2006,0.29,0.09
+Longwood,2007,0.3,0.1
+Longwood,2008,0.28,0.11
+Longwood,2009,0.27,0.11
+Longwood,2010,0.27,0.11
+Longwood,2011,0.26,0.1
+Longwood,2012,0.25,0.11
+Longwood,2013,0.24,0.12
+Longwood,2014,0.25,0.11
+Longwood,2015,0.23,0.13
+Longwood,2016,0.22,0.14
+Longwood,2017,0.21,0.16
+Longwood,2018,0.2,0.18
+Longwood,2019,0.2,0.18
+Longwood,2020,0.21,0.22
+Longwood,2021,0.2,0.27
+Longwood,2022,0.21,0.27
+Longwood,2023,0.2,0.3
+Longwood,2024,0.18,0.34
+Mattapan,2004,0.57,0.02
+Mattapan,2005,0.56,0.03
+Mattapan,2006,0.54,0.03
+Mattapan,2007,0.56,0.03
+Mattapan,2008,0.56,0.03
+Mattapan,2009,0.54,0.03
+Mattapan,2010,0.55,0.03
+Mattapan,2011,0.56,0.04
+Mattapan,2012,0.54,0.04
+Mattapan,2013,0.52,0.05
+Mattapan,2014,0.54,0.05
+Mattapan,2015,0.54,0.05
+Mattapan,2016,0.52,0.06
+Mattapan,2017,0.53,0.06
+Mattapan,2018,0.53,0.07
+Mattapan,2019,0.53,0.07
+Mattapan,2020,0.55,0.09
+Mattapan,2021,0.56,0.09
+Mattapan,2022,0.56,0.1
+Mattapan,2023,0.56,0.12
+Mattapan,2024,0.55,0.14
+North End,2004,0.36,0.08
+North End,2005,0.35,0.08
+North End,2006,0.32,0.09
+North End,2007,0.34,0.1
+North End,2008,0.33,0.11
+North End,2009,0.32,0.1
+North End,2010,0.32,0.11
+North End,2011,0.31,0.11
+North End,2012,0.29,0.11
+North End,2013,0.3,0.11
+North End,2014,0.29,0.11
+North End,2015,0.28,0.13
+North End,2016,0.28,0.1
+North End,2017,0.28,0.12
+North End,2018,0.27,0.13
+North End,2019,0.26,0.16
+North End,2020,0.26,0.19
+North End,2021,0.25,0.23
+North End,2022,0.27,0.24
+North End,2023,0.26,0.28
+North End,2024,0.25,0.29
+Roslindale,2004,0.68,0.02
+Roslindale,2005,0.67,0.02
+Roslindale,2006,0.66,0.02
+Roslindale,2007,0.67,0.02
+Roslindale,2008,0.67,0.02
+Roslindale,2009,0.65,0.02
+Roslindale,2010,0.65,0.02
+Roslindale,2011,0.65,0.02
+Roslindale,2012,0.64,0.03
+Roslindale,2013,0.64,0.03
+Roslindale,2014,0.64,0.03
+Roslindale,2015,0.63,0.03
+Roslindale,2016,0.63,0.04
+Roslindale,2017,0.63,0.05
+Roslindale,2018,0.63,0.05
+Roslindale,2019,0.63,0.05
+Roslindale,2020,0.63,0.08
+Roslindale,2021,0.63,0.1
+Roslindale,2022,0.64,0.1
+Roslindale,2023,0.63,0.12
+Roslindale,2024,0.63,0.14
+Roxbury,2004,0.3,0.07
+Roxbury,2005,0.3,0.08
+Roxbury,2006,0.29,0.08
+Roxbury,2007,0.32,0.08
+Roxbury,2008,0.32,0.08
+Roxbury,2009,0.3,0.09
+Roxbury,2010,0.31,0.09
+Roxbury,2011,0.31,0.1
+Roxbury,2012,0.31,0.11
+Roxbury,2013,0.31,0.13
+Roxbury,2014,0.32,0.13
+Roxbury,2015,0.31,0.15
+Roxbury,2016,0.3,0.16
+Roxbury,2017,0.3,0.17
+Roxbury,2018,0.3,0.18
+Roxbury,2019,0.3,0.19
+Roxbury,2020,0.31,0.22
+Roxbury,2021,0.32,0.23
+Roxbury,2022,0.32,0.23
+Roxbury,2023,0.32,0.25
+Roxbury,2024,0.32,0.25
+South Boston,2004,0.5,0.04
+South Boston,2005,0.49,0.05
+South Boston,2006,0.48,0.05
+South Boston,2007,0.51,0.05
+South Boston,2008,0.5,0.06
+South Boston,2009,0.49,0.08
+South Boston,2010,0.49,0.08
+South Boston,2011,0.49,0.08
+South Boston,2012,0.47,0.08
+South Boston,2013,0.47,0.08
+South Boston,2014,0.47,0.08
+South Boston,2015,0.45,0.09
+South Boston,2016,0.45,0.09
+South Boston,2017,0.43,0.1
+South Boston,2018,0.42,0.11
+South Boston,2019,0.41,0.12
+South Boston,2020,0.4,0.16
+South Boston,2021,0.39,0.18
+South Boston,2022,0.4,0.19
+South Boston,2023,0.4,0.21
+South Boston,2024,0.38,0.22
+South Boston Waterfront,2004,0.24,0.06
+South Boston Waterfront,2005,0.25,0.08
+South Boston Waterfront,2006,0.26,0.11
+South Boston Waterfront,2007,0.27,0.15
+South Boston Waterfront,2008,0.22,0.12
+South Boston Waterfront,2009,0.35,0.12
+South Boston Waterfront,2010,0.33,0.22
+South Boston Waterfront,2011,0.37,0.19
+South Boston Waterfront,2012,0.34,0.15
+South Boston Waterfront,2013,0.35,0.14
+South Boston Waterfront,2014,0.4,0.13
+South Boston Waterfront,2015,0.38,0.13
+South Boston Waterfront,2016,0.38,0.14
+South Boston Waterfront,2017,0.3,0.19
+South Boston Waterfront,2018,0.33,0.17
+South Boston Waterfront,2019,0.33,0.2
+South Boston Waterfront,2020,0.28,0.3
+South Boston Waterfront,2021,0.27,0.35
+South Boston Waterfront,2022,0.28,0.41
+South Boston Waterfront,2023,0.29,0.35
+South Boston Waterfront,2024,0.29,0.38
+South End,2004,0.46,0.06
+South End,2005,0.46,0.07
+South End,2006,0.45,0.07
+South End,2007,0.47,0.07
+South End,2008,0.47,0.08
+South End,2009,0.46,0.08
+South End,2010,0.47,0.08
+South End,2011,0.46,0.1
+South End,2012,0.44,0.09
+South End,2013,0.44,0.1
+South End,2014,0.43,0.09
+South End,2015,0.4,0.1
+South End,2016,0.4,0.1
+South End,2017,0.39,0.12
+South End,2018,0.39,0.13
+South End,2019,0.38,0.14
+South End,2020,0.38,0.18
+South End,2021,0.37,0.2
+South End,2022,0.38,0.21
+South End,2023,0.37,0.24
+South End,2024,0.36,0.25
+West End,2004,0.43,0.05
+West End,2005,0.42,0.06
+West End,2006,0.41,0.06
+West End,2007,0.43,0.07
+West End,2008,0.41,0.08
+West End,2009,0.4,0.08
+West End,2010,0.37,0.07
+West End,2011,0.37,0.08
+West End,2012,0.34,0.09
+West End,2013,0.34,0.09
+West End,2014,0.33,0.1
+West End,2015,0.33,0.1
+West End,2016,0.3,0.11
+West End,2017,0.29,0.12
+West End,2018,0.29,0.13
+West End,2019,0.27,0.15
+West End,2020,0.27,0.21
+West End,2021,0.27,0.23
+West End,2022,0.28,0.24
+West End,2023,0.28,0.27
+West End,2024,0.27,0.28
+West Roxbury,2004,0.67,0.01
+West Roxbury,2005,0.68,0.01
+West Roxbury,2006,0.67,0.02
+West Roxbury,2007,0.68,0.02
+West Roxbury,2008,0.68,0.02
+West Roxbury,2009,0.67,0.02
+West Roxbury,2010,0.68,0.02
+West Roxbury,2011,0.67,0.02
+West Roxbury,2012,0.67,0.02
+West Roxbury,2013,0.67,0.03
+West Roxbury,2014,0.67,0.03
+West Roxbury,2015,0.66,0.03
+West Roxbury,2016,0.66,0.03
+West Roxbury,2017,0.66,0.04
+West Roxbury,2018,0.66,0.04
+West Roxbury,2019,0.66,0.05
+West Roxbury,2020,0.66,0.07
+West Roxbury,2021,0.66,0.09
+West Roxbury,2022,0.67,0.09
+West Roxbury,2023,0.66,0.11
+West Roxbury,2024,0.66,0.13

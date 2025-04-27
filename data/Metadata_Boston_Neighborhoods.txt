@@ -1,0 +1,211 @@
+Title: Boston Neighborhood Boundaries Approximated by 2020 Census Block Groups
+Table: boston_neighborhoods_2020
+Type: geojson
+
+Data Source:
+Boston Neighborhood Boundaries (Approximated by Census Block Groups):
+    Source: Analyze Boston - City of Boston
+    Link: https://data.boston.gov/dataset/e11a621a-6561-4da6-a715-6edd2fa217a4
+    Download URL: https://data.boston.gov/dataset/e11a621a-6561-4da6-a715-6edd2fa217a4/resource/c9663e7a-84c2-435c-91c0-91cdce1ee5ac/download/boston_neighborhood_boundaries_approximated_by_2020_census_block_groups.geojson
+    Last Updated: February 26, 2025
+    Metadata Last Updated: February 26, 2025
+    Created: February 8, 2024
+    Format: GeoJSON
+    License: Open Data Commons Public Domain Dedication and License (PDDL)
+
+Description:
+The U.S. Census Bureau does not officially define neighborhood boundaries for Boston. To facilitate demographic and statistical analysis, Census block groups have been aggregated to approximate neighborhood boundaries. These boundaries allow for the reporting and visualization of Census data at the neighborhood level. Census block groups are statistical geographic subdivisions created for the tabulation of data from the decennial census and the American Community Survey.
+
+This dataset is primarily used for work that relies on Census data. For non-Census-based analysis, the official Boston neighborhood boundaries should be referenced.
+
+Attributes:
+    objectid:
+        Type: Integer
+        Description: Internal object ID.
+        Example: 1
+
+    blockgr2020_ctr_neighb_name:
+        Type: String
+        Description: The name of the neighborhood.
+        Example: Allston
+
+    tot_pop_all:
+        Type: Integer
+        Description: Total population within the neighborhood.
+        Example: 28621
+
+    tot_pop_0_17:
+        Type: Integer
+        Description: Total population of children (under 18).
+        Example: 1953
+
+    tot_pop_18plus:
+        Type: Integer
+        Description: Total adult (18+) population.
+        Example: 26668
+
+    aapi_all:
+        Type: Integer
+        Description: Total Asian American and Pacific Islander population.
+        Example: 7173
+
+    aapi_0_17:
+        Type: Integer
+        Description: Child (under 18) Asian American and Pacific Islander population.
+        Example: 353
+
+    aapi_18plus:
+        Type: Integer
+        Description: Adult (18+) Asian American and Pacific Islander population.
+        Example: 6820
+
+    black_all:
+        Type: Integer
+        Description: Total Black population.
+        Example: 1451
+
+    black_0_17:
+        Type: Integer
+        Description: Child (under 18) Black population.
+        Example: 157
+
+    black_18plus:
+        Type: Integer
+        Description: Adult (18+) Black population.
+        Example: 1294
+
+    hisp_all:
+        Type: Integer
+        Description: Total Hispanic population.
+        Example: 3657
+
+    hisp_0_17:
+        Type: Integer
+        Description: Child (under 18) Hispanic population.
+        Example: 586
+
+    hisp_18plus:
+        Type: Integer
+        Description: Adult (18+) Hispanic population.
+        Example: 3071
+
+    white_all:
+        Type: Integer
+        Description: Total White population.
+        Example: 14634
+
+    white_0_17:
+        Type: Integer
+        Description: Child (under 18) White population.
+        Example: 612
+
+    white_18plus:
+        Type: Integer
+        Description: Adult (18+) White population.
+        Example: 14022
+
+    aian_all:
+        Type: Integer
+        Description: Total American Indian and Alaska Native population.
+        Example: 27
+
+    aian_0_17:
+        Type: Integer
+        Description: Child (under 18) American Indian and Alaska Native population.
+        Example: 9
+
+    aian_18plus:
+        Type: Integer
+        Description: Adult (18+) American Indian and Alaska Native population.
+        Example: 18
+
+    military:
+        Type: Integer
+        Description: Military personnel residing in the neighborhood.
+        Example: 0
+
+    two_or_more_all:
+        Type: Integer
+        Description: Total population identifying as two or more races.
+        Example: 1349
+
+    two_or_more_0_17:
+        Type: Integer
+        Description: Child (under 18) population identifying as two or more races.
+        Example: 179
+
+    two_or_more_18plus:
+        Type: Integer
+        Description: Adult (18+) population identifying as two or more races.
+        Example: 1170
+
+    other_all:
+        Type: Integer
+        Description: Total population identifying as "Other" race.
+        Example: 330
+
+    other_0_17:
+        Type: Integer
+        Description: Child (under 18) population identifying as "Other" race.
+        Example: 57
+
+    other_18plus:
+        Type: Integer
+        Description: Adult (18+) population identifying as "Other" race.
+        Example: 273
+
+    tot_gq_pop:
+        Type: Integer
+        Description: Total population residing in group living arrangements.
+        Example: 3390
+
+    other_inst:
+        Type: Integer
+        Description: Population in institutional facilities other than correctional or nursing facilities.
+        Example: 0
+
+    college:
+        Type: Integer
+        Description: Population residing in college dormitories.
+        Example: 3214
+
+    correctional:
+        Type: Integer
+        Description: Population residing in correctional facilities.
+        Example: 0
+
+    nursing:
+        Type: Integer
+        Description: Population residing in nursing facilities.
+        Example: 26
+
+    tot_unit:
+        Type: Integer
+        Description: Total housing units in the neighborhood.
+        Example: 12527
+
+    occ_unit:
+        Type: Integer
+        Description: Total occupied housing units.
+        Example: 11740
+
+    vacant_unit:
+        Type: Integer
+        Description: Total vacant housing units.
+        Example: 787
+
+    juvenile:
+        Type: Integer
+        Description: Population residing in juvenile justice system facilities.
+        Example: 0
+
+    other_noninst:
+        Type: Integer
+        Description: Population residing in non-institutionalized "Other" group quarters.
+        Example: 150
+
+    geometry:
+        Type: GeoJSON MultiPolygon
+        Description: The geographic representation of the neighborhood boundary.
+        Example: MULTIPOLYGON (((-71.103 42.345, -71.102 42.346, -71.101 42.347, -71.100 42.348)))
+

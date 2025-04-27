@@ -46,8 +46,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 // 2. Load neighborhood shapes
 Promise.all([
-  d3.json('Boston_Neighborhoods.geojson'),
-  d3.csv('Change Over Time_Corporate Ownership & Owner Occupancy Rates in Boston Neighborhoods.csv')
+  d3.json('data/Boston_Neighborhoods.geojson'),
+  d3.csv('data/Change Over Time_Corporate Ownership & Owner Occupancy Rates in Boston Neighborhoods.csv')
 ]).then(initMap);
 
 
