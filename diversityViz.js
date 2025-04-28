@@ -1,6 +1,8 @@
 // diversityViz.js
 
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js';
+// import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
+import { VRButton } from './VRButton.js';
 
 export class DiversityVisualizer {
   constructor(container) {
@@ -34,6 +36,10 @@ export class DiversityVisualizer {
     this._initPeople();
     this._animate();
     this._addEventListeners();
+
+
+    this.renderer.xr.enabled = true;
+    document.body.appendChild(VRButton.createButton(this.renderer));
   }
 
   _initScene() {
@@ -83,7 +89,8 @@ export class DiversityVisualizer {
   }
 
   _animate() {
-    requestAnimationFrame(() => this._animate());
+    // requestAnimationFrame(() => this._animate());
+    this.renderer.setAnimationLoop(this._animate.bind(this));
 
     this.raycaster.setFromCamera(this.mouse, this.camera);
     const intersects = this.raycaster.intersectObjects(this.people.map(p => p.mesh));
