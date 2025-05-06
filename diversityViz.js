@@ -88,9 +88,11 @@ export class DiversityVisualizer {
     const texture = new THREE.CanvasTexture(canvas);
     const material = new THREE.SpriteMaterial({ map: texture });
     this.positionLabel = new THREE.Sprite(material);
-    this.positionLabel.scale.set(4, 1, 1); // Size of the label
+    // this.positionLabel.scale.set(4, 1, 1); // Size of the label
+    this.positionLabel.scale.set(1.2, 0.4, 1);
     this.positionLabel.position.set(0, 2, -2); // Initial position in the scene
-    this.scene.add(this.positionLabel);
+    this.camera.add(this.positionLabel);
+    this.positionLabel.position.set(0, -0.3, -1.5); // In front of camera, slightly below eye level
   }
 
   _initPeople() {
