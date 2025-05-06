@@ -31,6 +31,13 @@ export class DiversityVisualizer {
       spacing: 2
     };
 
+    this.corridorBounds = {
+      xMin: -2,
+      xMax: 2,
+      zMin: -5,
+      zMax: 5  // for now, not enforced but available
+    };
+
     this.moveState = { forward: 0, right: 0 };
     this.lookState = { x: 0, y: 0 };
     this.keyboardEnabled = true;
@@ -172,6 +179,23 @@ export class DiversityVisualizer {
     const camPos = new THREE.Vector3();
     this.camera.getWorldPosition(camPos);
 
+    const inCorridor = (
+      camPos.x >= this.corridorBounds.xMin &&
+      camPos.x <= this.corridorBounds.xMax
+    );
+
+    // If in corrider, Z driver ownership
+    if (inCorridor) {
+      // Clamp and normalize Z to [0, 1] range (scrubbing)
+      const z = THREE.MathUtils.clamp(camPos.z, this.corridorBounds.zMin, this.corridorBounds.zMax);
+      const progress = (z - this.corridorBounds.zMin) / (this.corridorBounds.zMax - this.corridorBounds.zMin);
+      this.update(progress);
+      this.scrubStatus = `ACTIVE`;
+      this.scrubProgress = progress;
+    } else {
+      this.scrubStatus = `FROZEN`;
+    }
+
     const canvas = this.positionLabel.material.map.image;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -180,6 +204,11 @@ export class DiversityVisualizer {
     ctx.fillText(`X: ${camPos.x.toFixed(2)}`, 10, 40);
     ctx.fillText(`Y: ${camPos.y.toFixed(2)}`, 10, 70);
     ctx.fillText(`Z: ${camPos.z.toFixed(2)}`, 10, 100);
+    ctx.fillText(`Mode: ${this.scrubStatus}`, 10, 130);
+    if (this.scrubStatus === 'ACTIVE') {
+      ctx.fillText(`Ownership: ${this.scrubProgress.toFixed(2)}`, 10, 160);
+    }
+
     this.positionLabel.material.map.needsUpdate = true;
 
     this.renderer.render(this.scene, this.camera);
