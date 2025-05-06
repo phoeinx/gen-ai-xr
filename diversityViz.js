@@ -122,17 +122,17 @@ export class DiversityVisualizer {
   _animate() {
     const moveSpeed = 0.1;
 
-    // Direction the camera is facing (on XZ plane)
+    // Get forward direction from cameraRig (XZ only)
     const forward = new THREE.Vector3();
     this.camera.getWorldDirection(forward);
     forward.y = 0;
     forward.normalize();
 
-    // Right is perpendicular to forward and up (Y)
+    // Compute right vector correctly (Y is up)
     const right = new THREE.Vector3();
-    right.crossVectors(new THREE.Vector3(0, 1, 0), forward).normalize();
+    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
-    // Compute movement vector
+    // Apply movement
     const moveVector = new THREE.Vector3();
     moveVector.addScaledVector(forward, this.moveState.forward);
     moveVector.addScaledVector(right, this.moveState.right);
@@ -165,7 +165,10 @@ export class DiversityVisualizer {
     this.people.forEach(p => p.applyClusteringForce(this.lastProgress));
 
     // --- Update user camera position and show it on the label ---
-    const camPos = this.camera.position;
+    // const camPos = this.camera.position;
+
+    const camPos = new THREE.Vector3();
+    this.camera.getWorldPosition(camPos);
 
     const canvas = this.positionLabel.material.map.image;
     const ctx = canvas.getContext('2d');
