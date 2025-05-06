@@ -6,6 +6,10 @@ import { VRButton } from './VRButton.js';
 
 export class DiversityVisualizer {
   constructor(container) {
+    this.lastUpdateTime = 0;
+    this.updateInterval = 100; // milliseconds
+    this.lastScrubProgress = null;
+
     this.container = container;
     this.people = [];
     this.highlighted = null;
@@ -189,7 +193,20 @@ export class DiversityVisualizer {
       // Clamp and normalize Z to [0, 1] range (scrubbing)
       const z = THREE.MathUtils.clamp(camPos.z, this.corridorBounds.zMin, this.corridorBounds.zMax);
       const progress = (z - this.corridorBounds.zMin) / (this.corridorBounds.zMax - this.corridorBounds.zMin);
-      this.update(progress);
+      // this.update(progress);
+
+      const now = performance.now();
+      const progressChanged = Math.abs(progress - (this.lastScrubProgress ?? 1)) > 0.001;
+
+      if (
+        now - this.lastUpdateTime > this.updateInterval &&
+        progressChanged
+      ) {
+        this.update(progress);
+        this.lastUpdateTime = now;
+        this.lastScrubProgress = progress;
+      }
+
       this.scrubStatus = `ACTIVE`;
       this.scrubProgress = progress;
     } else {
