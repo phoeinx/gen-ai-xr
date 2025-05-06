@@ -131,14 +131,15 @@ export class DiversityVisualizer {
 
     // --- Update user camera position and show it on the label ---
     const camPos = this.camera.position;
-    const msg = `User position:\nX: ${camPos.x.toFixed(2)}\nY: ${camPos.y.toFixed(2)}\nZ: ${camPos.z.toFixed(2)}`;
 
     const canvas = this.positionLabel.material.map.image;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = 'white';
     ctx.font = '28px monospace';
-    ctx.fillText(msg, 10, 64);
+    ctx.fillText(`X: ${camPos.x.toFixed(2)}`, 10, 40);
+    ctx.fillText(`Y: ${camPos.y.toFixed(2)}`, 10, 70);
+    ctx.fillText(`Z: ${camPos.z.toFixed(2)}`, 10, 100);
     this.positionLabel.material.map.needsUpdate = true;
 
     this.renderer.render(this.scene, this.camera);
