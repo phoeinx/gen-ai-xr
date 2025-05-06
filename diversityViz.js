@@ -60,6 +60,22 @@ export class DiversityVisualizer {
 
     const axesHelper = new THREE.AxesHelper(10);
     this.scene.add(axesHelper);
+
+    // --- Create a text sprite to show camera position ---
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'white';
+    ctx.font = '28px monospace';
+    ctx.fillText('User position: ', 10, 64);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({ map: texture });
+    this.positionLabel = new THREE.Sprite(material);
+    this.positionLabel.scale.set(4, 1, 1); // Size of the label
+    this.positionLabel.position.set(0, 2, -2); // Initial position in the scene
+    this.scene.add(this.positionLabel);
   }
 
   _initPeople() {
@@ -112,6 +128,19 @@ export class DiversityVisualizer {
     }
 
     this.people.forEach(p => p.applyClusteringForce(this.lastProgress));
+
+    // --- Update user camera position and show it on the label ---
+    const camPos = this.camera.position;
+    const msg = `User position:\nX: ${camPos.x.toFixed(2)}\nY: ${camPos.y.toFixed(2)}\nZ: ${camPos.z.toFixed(2)}`;
+
+    const canvas = this.positionLabel.material.map.image;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'white';
+    ctx.font = '28px monospace';
+    ctx.fillText(msg, 10, 64);
+    this.positionLabel.material.map.needsUpdate = true;
+
     this.renderer.render(this.scene, this.camera);
   }
 
