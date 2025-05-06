@@ -31,6 +31,11 @@ export class DiversityVisualizer {
       spacing: 2
     };
 
+    this.moveState = { forward: 0, right: 0 };
+    this.lookState = { x: 0, y: 0 };
+    this.keyboardEnabled = true;
+    this.pointerLocked = false;
+
     this.totalPeople = this.config.cols * this.config.rows;
     this._initScene();
     this._initPeople();
@@ -44,9 +49,19 @@ export class DiversityVisualizer {
 
   _initScene() {
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(75, this.container.clientWidth / this.container.clientHeight, 0.1, 1000);
-    this.camera.position.set(20, 20, 20);
-    this.camera.lookAt(0, 0, 0);
+    this.camera = new THREE.PerspectiveCamera(
+      75,
+      this.container.clientWidth / this.container.clientHeight,
+      0.1,
+      1000
+    );
+
+    this.camera.rotation.order = 'YXZ'; // yaw first, then pitch
+
+    this.cameraRig = new THREE.Object3D();
+    this.cameraRig.position.set(0, 1.6, 0); // seated height
+    this.cameraRig.add(this.camera);
+    this.scene.add(this.cameraRig);
 
     this.raycaster = new THREE.Raycaster();
     this.renderer = new THREE.WebGLRenderer();
@@ -105,6 +120,26 @@ export class DiversityVisualizer {
   }
 
   _animate() {
+    const moveSpeed = 0.1;
+
+    // Direction the camera is facing (on XZ plane)
+    const forward = new THREE.Vector3();
+    this.camera.getWorldDirection(forward);
+    forward.y = 0;
+    forward.normalize();
+
+    // Right is perpendicular to forward and up (Y)
+    const right = new THREE.Vector3();
+    right.crossVectors(new THREE.Vector3(0, 1, 0), forward).normalize();
+
+    // Compute movement vector
+    const moveVector = new THREE.Vector3();
+    moveVector.addScaledVector(forward, this.moveState.forward);
+    moveVector.addScaledVector(right, this.moveState.right);
+    moveVector.multiplyScalar(moveSpeed);
+
+    this.cameraRig.position.add(moveVector);
+
     // requestAnimationFrame(() => this._animate());
     this.renderer.setAnimationLoop(this._animate.bind(this));
 
@@ -146,6 +181,46 @@ export class DiversityVisualizer {
   }
 
   _addEventListeners() {
+    document.addEventListener('keydown', (e) => {
+      if (!this.keyboardEnabled) return;
+      if (e.code === 'KeyW') this.moveState.forward = 1;
+      if (e.code === 'KeyS') this.moveState.forward = -1;
+      if (e.code === 'KeyA') this.moveState.right = -1;
+      if (e.code === 'KeyD') this.moveState.right = 1;
+    });
+
+    document.addEventListener('keyup', (e) => {
+      if (e.code === 'KeyW' && this.moveState.forward === 1) this.moveState.forward = 0;
+      if (e.code === 'KeyS' && this.moveState.forward === -1) this.moveState.forward = 0;
+      if (e.code === 'KeyA' && this.moveState.right === -1) this.moveState.right = 0;
+      if (e.code === 'KeyD' && this.moveState.right === 1) this.moveState.right = 0;
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!this.pointerLocked || !this.keyboardEnabled) return;
+      const sensitivity = 0.002;
+      this.cameraRig.rotation.y -= e.movementX * sensitivity; // yaw
+      this.camera.rotation.x -= e.movementY * sensitivity;    // pitch (look up/down)
+
+      // Clamp vertical rotation to prevent flipping
+      this.camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.camera.rotation.x));
+    });
+
+    // document.addEventListener('mousemove', (e) => {
+    //   if (!this.pointerLocked || !this.keyboardEnabled) return;
+    //   const sensitivity = 0.002;
+    //   this.cameraRig.rotation.y -= e.movementX * sensitivity; // Yaw only (no pitch)
+    // });
+
+
+    // Enable pointer lock on click
+    this.renderer.domElement.addEventListener('click', () => {
+      this.renderer.domElement.requestPointerLock();
+    });
+    document.addEventListener('pointerlockchange', () => {
+      this.pointerLocked = document.pointerLockElement === this.renderer.domElement;
+    });
+
     window.addEventListener("mousemove", event => {
       const rect = this.renderer.domElement.getBoundingClientRect();
       this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
