@@ -107,6 +107,12 @@ export class DiversityVisualizer {
     this.positionLabel.position.set(0, 2, -2); // Initial position in the scene
     this.camera.add(this.positionLabel);
     this.positionLabel.position.set(0, -0.3, -1.5); // In front of camera, slightly below eye level
+
+    const puckGeometry = new THREE.BoxGeometry(3.0, 0.05, 0.4);
+    const puckMaterial = new THREE.MeshStandardMaterial({ color: 0xff8800 });
+    this.sliderFollower = new THREE.Mesh(puckGeometry, puckMaterial);
+    this.sliderFollower.position.set(0, 0.025, 0); // just above ground
+    this.scene.add(this.sliderFollower);
   }
 
   _initPeople() {
@@ -196,7 +202,9 @@ export class DiversityVisualizer {
 
     if (inCorridor) {
       // Clamp and normalize Z to [0, 1]
-      const z = THREE.MathUtils.clamp(camPos.z, this.corridorBounds.zMin, this.corridorBounds.zMax);
+      // const z = THREE.MathUtils.clamp(camPos.z, this.corridorBounds.zMin, this.corridorBounds.zMax);
+      // const progress = (z - this.corridorBounds.zMin) / (this.corridorBounds.zMax - this.corridorBounds.zMin);
+      const z = this.sliderFollower.position.z;
       const progress = (z - this.corridorBounds.zMin) / (this.corridorBounds.zMax - this.corridorBounds.zMin);
 
       const progressChanged = Math.abs(progress - (this.lastScrubProgress ?? -1)) > 0.001;
@@ -213,6 +221,15 @@ export class DiversityVisualizer {
       this.scrubStatus = `FROZEN`;
     }
 
+    if (this.scrubStatus === 'ACTIVE') {
+      const targetZ = THREE.MathUtils.clamp(camPos.z, this.corridorBounds.zMin, this.corridorBounds.zMax);
+      const currentZ = this.sliderFollower.position.z;
+
+      const damping = 0.1; // smaller = smoother/slower
+      const newZ = THREE.MathUtils.lerp(currentZ, targetZ, damping);
+
+      this.sliderFollower.position.z = newZ;
+    }
 
     const canvas = this.positionLabel.material.map.image;
     const ctx = canvas.getContext('2d');
