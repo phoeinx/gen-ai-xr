@@ -32,10 +32,13 @@ export class DiversityVisualizer {
         damping: 0.55
       },
       raceColors: [0x588157, 0x3a7ca5, 0xef476f, 0xffc857],
-      raceLabels: ['Green', 'Blue', 'Red', 'Yellow'],
+      // raceLabels: ['Green', 'Blue', 'Red', 'Yellow'],
+      raceLabels: ['White', 'Asian', 'Black', 'Hispanic / Other'],
       ageHeights: [0.2, 0.5, 1.0],
-      ageLabels: ['Young', 'Middle', 'Older'],
-      eduLabels: ['None', 'Medium', 'High'],
+      // ageLabels: ['Young', 'Middle', 'Older'],
+      ageLabels: ['0–19', '20–34', '35+'],
+      // eduLabels: ['None', 'Medium', 'High'],
+      eduLabels: ['< High School', 'High School / Some College', 'Bachelor or Above'],
       cols: 10,
       rows: 10,
       spacing: 2
@@ -63,6 +66,10 @@ export class DiversityVisualizer {
     this.snapshotData = [];
     this.loadData().then(() => {
     console.log('Snapshot data loaded:', this.snapshotData.length, 'entries');
+    this.snapshotReady = true;
+
+    // Trigger initial update using progress = 0
+    this.update(this.lastProgress || 0);
     });
 
     this.renderer.xr.enabled = true;
@@ -501,6 +508,20 @@ export class DiversityVisualizer {
       };
       person.targetEducationLevel = eduIndexMap[eduChoice];
 
+      // Job category
+      // console.log('Snapshot job fields:', snapshot.Job_Technology, snapshot.Job_Corporate, snapshot.Job_Healthcare);
+      const jobChoice = this.getWeightedCategory({
+        Job_Technology: snapshot.Job_Technology,
+        Job_Corporate: snapshot.Job_Corporate,
+        Job_Healthcare: snapshot.Job_Healthcare,
+        Job_Construction: snapshot.Job_Construction,
+        Job_Hospitality: snapshot.Job_Hospitality,
+        Job_Repair_Tech: snapshot.Job_Repair_Tech
+      }, i, totalPeople);
+
+      person.targetJobCategory = jobChoice;  // store full label
+      // console.log(`Assigned job to person ${i}: ${jobChoice}`);
+
       person.update(progress); // update mesh
     }
 
@@ -631,11 +652,13 @@ createEducationMesh(level) {
 
     const { raceLabels, ageLabels, eduLabels } = this.viz.config;
 
+    // console.log(`Person ${this.index} job:`, this.targetJobCategory);
     return {
       index: this.index,
       race: raceLabels[raceIndex],
       age: ageLabels[ageIndex],
-      education: eduLabels[eduLevel]
+      education: eduLabels[eduLevel],
+      job: this.targetJobCategory?.replace('Job_', '').replace('_', ' ') || 'Unknown'
     };
   }
 
