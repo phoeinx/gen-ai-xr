@@ -48,7 +48,8 @@ export class DiversityVisualizer {
     this.moveState = { forward: 0, right: 0 };
     this.lookState = { x: 0, y: 0 };
     this.keyboardEnabled = true;
-    this.pointerLocked = false;
+    this.pointerLocked = false; // already in use
+    this.inVR = false;
 
     this.totalPeople = this.config.cols * this.config.rows;
     this._initScene();
@@ -89,6 +90,14 @@ export class DiversityVisualizer {
 
     const axesHelper = new THREE.AxesHelper(10);
     this.scene.add(axesHelper);
+
+    this.renderer.xr.addEventListener('sessionstart', () => {
+      this.inVR = true;
+    });
+
+    this.renderer.xr.addEventListener('sessionend', () => {
+      this.inVR = false;
+    });
 
     // --- Create a text sprite to show camera position ---
     const canvas = document.createElement('canvas');
@@ -165,16 +174,36 @@ export class DiversityVisualizer {
     // requestAnimationFrame(() => this._animate());
     this.renderer.setAnimationLoop(this._animate.bind(this));
 
-    this.raycaster.setFromCamera(this.mouse, this.camera);
+    // this.raycaster.setFromCamera(this.mouse, this.camera);
+    if (this.inVR || this.pointerLocked) {
+      // Use center of screen (camera direction)
+      const origin = new THREE.Vector3();
+      const direction = new THREE.Vector3();
+
+      this.camera.getWorldPosition(origin);
+      this.camera.getWorldDirection(direction);
+
+      this.raycaster.set(origin, direction);
+    } else {
+      // Use mouse coordinates (2D hover)
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+    }
+
     const intersects = this.raycaster.intersectObjects(this.people.map(p => p.mesh));
 
-    if (this.highlighted) this.highlighted.mesh.material.emissive.setHex(0x000000);
+    const target = intersects.length > 0
+      ? this.people.find(p => p.mesh === intersects[0].object)
+      : null;
 
-    const newlyHighlighted = intersects.length > 0 ? this.people.find(p => p.mesh === intersects[0].object) : null;
+    if (target !== this.highlighted) {
+      // Un-highlight old one
+      if (this.highlighted) {
+        this.highlighted.mesh.material.emissive.setHex(0x000000);
+      }
 
-    if (newlyHighlighted !== this.highlighted) {
-      this.highlighted = newlyHighlighted;
+      this.highlighted = target;
 
+      // Highlight new one
       if (this.highlighted) {
         this.highlighted.mesh.material.emissive.setHex(0x444444);
         const data = this.highlighted.getDisplayData();
