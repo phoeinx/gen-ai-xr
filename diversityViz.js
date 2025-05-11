@@ -104,6 +104,48 @@ export class DiversityVisualizer {
     this.scene.add(light);
     this.scene.add(new THREE.AmbientLight(0x404040));
 
+    const alleyWidth = 4;    // X direction (side-to-side)
+    const alleyLength = 40;  // Z direction (forward-back)
+
+    const alleyGeometry = new THREE.PlaneGeometry(alleyWidth, alleyLength);
+    const alleyMaterial = new THREE.MeshStandardMaterial({
+      color: 0x444444,
+      side: THREE.DoubleSide,
+      transparent: false
+    });
+
+    this.alleyPlane = new THREE.Mesh(alleyGeometry, alleyMaterial);
+
+    // Rotate to lie flat on XZ plane
+    this.alleyPlane.rotation.x = -Math.PI / 2;
+
+    // Position it to match your clustering center (horizontally)
+    const cx = 0;
+    const cz = 0;
+    this.alleyPlane.position.set(cx, 0.025, cz);
+
+    this.scene.add(this.alleyPlane);
+
+    const grassWidth = 30;
+    const grassLength = 30;
+
+    const grassGeometry = new THREE.PlaneGeometry(grassWidth, grassLength);
+    const grassMaterial = new THREE.MeshStandardMaterial({
+      color: 0x228B22, // forest green
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.4
+    });
+
+    this.grassPlane = new THREE.Mesh(grassGeometry, grassMaterial);
+    this.grassPlane.rotation.x = -Math.PI / 2;
+
+    const cgx = this.config.clusterCenter.x;
+    const cgz = this.config.clusterCenter.z;
+
+    this.grassPlane.position.set(cgx - 6, 0, cgz); // 6 units left in X
+    this.scene.add(this.grassPlane);
+
     const axesHelper = new THREE.AxesHelper(10);
     this.scene.add(axesHelper);
 
@@ -610,7 +652,7 @@ createEducationMesh(level) {
   const emojiMap = ['‍🏭', '✏️', '🎓'];
   const emoji = emojiMap[level] || '❓';
 
-  const size = 64;
+  const size = 48;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -619,10 +661,9 @@ createEducationMesh(level) {
   // 🔥 No background fill — fully transparent canvas
   ctx.clearRect(0, 0, size, size);
 
-  ctx.font = '96px serif';
-  // ctx.font = '48px serif';
+  ctx.font = '26px serif';
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  ctx.textBaseline = 'bottom';
   ctx.fillStyle = 'black'; // or 'white' if the emoji is too dark
   ctx.fillText(emoji, size / 2, size / 2);
 
