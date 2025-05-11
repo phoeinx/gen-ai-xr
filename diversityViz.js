@@ -152,7 +152,7 @@ export class DiversityVisualizer {
 
     const puckCanvas = document.createElement('canvas');
     puckCanvas.width = 300;
-    puckCanvas.height = 64;
+    puckCanvas.height = 96;
 
     const puckCtx = puckCanvas.getContext('2d');
     puckCtx.fillStyle = 'white';
@@ -161,7 +161,7 @@ export class DiversityVisualizer {
     const puckLabelTexture = new THREE.CanvasTexture(puckCanvas);
     const puckLabelMaterial = new THREE.SpriteMaterial({ map: puckLabelTexture, transparent: true });
     this.puckLabel = new THREE.Sprite(puckLabelMaterial);
-    this.puckLabel.scale.set(2, 0.5, 1);
+    this.puckLabel.scale.set(2, 0.6, 1);
     this.puckLabel.position.set(0, 1.0, 0); // floats above the puck
     this.sliderFollower.add(this.puckLabel); // attach to puck
   }
@@ -396,10 +396,26 @@ export class DiversityVisualizer {
           const ctx = canvas.getContext('2d');
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          const percent = Math.round(this.currentSnapshot.corp_own_rate);
-          ctx.fillStyle = 'white';
-          ctx.font = '18px sans-serif';
-          ctx.fillText(`Corporate ownership: ${percent}%`, 10, 40);
+          const corpRate = Math.round(this.currentSnapshot.corp_own_rate);
+          const isObserved = corpRate <= 30;
+
+          const color = isObserved ? 'limegreen' : 'orange';
+          const labelLines = [
+            isObserved ? 'observed' : 'simulated',
+            'corporate ownership',
+            `${corpRate}%`
+          ];
+
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = color;
+          ctx.font = '16px monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          labelLines.forEach((line, i) => {
+            ctx.fillText(line, canvas.width / 2, 20 + i * 24);
+          });
+
           this.puckLabel.material.map.needsUpdate = true;
         }
       }
