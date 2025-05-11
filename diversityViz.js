@@ -117,6 +117,19 @@ export class DiversityVisualizer {
     this.camera.add(this.positionLabel);
     this.positionLabel.position.set(0, -0.3, -1.5); // In front of camera, slightly below eye level
 
+    // --- Label for hovered person ---
+    const hoverCanvas = document.createElement('canvas');
+    hoverCanvas.width = 512;
+    hoverCanvas.height = 128;
+    const hoverCtx = hoverCanvas.getContext('2d');
+
+    const hoverTexture = new THREE.CanvasTexture(hoverCanvas);
+    const hoverMaterial = new THREE.SpriteMaterial({ map: hoverTexture, transparent: true });
+    this.hoverLabel = new THREE.Sprite(hoverMaterial);
+    this.hoverLabel.scale.set(3, 1, 1); // size of label
+    this.hoverLabel.visible = false;
+    this.scene.add(this.hoverLabel);
+
     const puckGeometry = new THREE.BoxGeometry(3.0, 0.05, 0.4);
     const puckMaterial = new THREE.MeshStandardMaterial({ color: 0xff8800 });
     this.sliderFollower = new THREE.Mesh(puckGeometry, puckMaterial);
@@ -202,6 +215,37 @@ export class DiversityVisualizer {
       }
 
       this.highlighted = target;
+
+      if (this.highlighted) {
+        const data = this.highlighted.getDisplayData();
+        const lines = [
+          `ID: ${data.index}`,
+          `Race: ${data.race}`,
+          `Age: ${data.age}`,
+          `Education: ${data.education}`
+        ];
+
+        // Draw on canvas
+        const canvas = this.hoverLabel.material.map.image;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+        ctx.font = '28px monospace';
+        lines.forEach((line, i) => {
+          ctx.fillText(line, 10, 40 + i * 30);
+        });
+        this.hoverLabel.material.map.needsUpdate = true;
+
+        // Position label slightly above person
+        const pos = this.highlighted.mesh.position.clone();
+        pos.y += 2;
+        this.hoverLabel.position.copy(pos);
+        this.hoverLabel.lookAt(this.camera.position);
+        this.hoverLabel.visible = true;
+
+      } else {
+        this.hoverLabel.visible = false;
+      }
 
       // Highlight new one
       if (this.highlighted) {
