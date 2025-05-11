@@ -226,6 +226,24 @@ export class DiversityVisualizer {
     return result;
   }
 
+  getWeightedCategory(weights, personIndex, totalPeople) {
+    const total = Object.values(weights).reduce((a, b) => a + b, 0);
+    const cumulative = [];
+    let sum = 0;
+    for (const key in weights) {
+      sum += weights[key] / total;
+      cumulative.push({ key, threshold: sum });
+    }
+
+    // Use a stable pseudo-random value per person
+    const pseudoRandom = (personIndex + 1) / (totalPeople + 1);
+
+    for (const entry of cumulative) {
+      if (pseudoRandom <= entry.threshold) return entry.key;
+    }
+    return cumulative[cumulative.length - 1].key;
+  }
+
   _animate() {
     const moveSpeed = 0.1;
 
@@ -411,13 +429,6 @@ export class DiversityVisualizer {
       this.camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.camera.rotation.x));
     });
 
-    // document.addEventListener('mousemove', (e) => {
-    //   if (!this.pointerLocked || !this.keyboardEnabled) return;
-    //   const sensitivity = 0.002;
-    //   this.cameraRig.rotation.y -= e.movementX * sensitivity; // Yaw only (no pitch)
-    // });
-
-
     // Enable pointer lock on click
     this.renderer.domElement.addEventListener('click', () => {
       this.renderer.domElement.requestPointerLock();
@@ -438,7 +449,65 @@ export class DiversityVisualizer {
     if (!snapshot) return; // wait until data is loaded
     this.lastProgress = progress;
     this.currentSnapshot = snapshot;
-    this.people.forEach(p => p.update(progress));
+    // this.people.forEach(p => p.update(progress));
+    const totalPeople = this.people.length;
+
+    for (let i = 0; i < totalPeople; i++) {
+      const person = this.people[i];
+
+      // Race
+      const raceChoice = this.getWeightedCategory({
+        White: snapshot.White,
+        Asian: snapshot.Asian,
+        Black: snapshot.Black,
+        Hispanic: snapshot.Hispanic,
+        Other: snapshot.Other
+      }, i, totalPeople);
+
+      const raceIndexMap = {
+        White: 0,
+        Asian: 1,
+        Black: 2,
+        Hispanic: 3,
+        Other: 3 // reuse 3 for both Hispanic/Other in your 4-color system
+      };
+      person.targetRace = raceIndexMap[raceChoice];
+
+      // Age
+      const ageChoice = this.getWeightedCategory({
+        'Age_0_19': snapshot['Age_0_19'],
+        'Age_20_34': snapshot['Age_20_34'],
+        'Age_35_54': snapshot['Age_35_54'],
+        'Age_55_plus': snapshot['Age_55_plus']
+      }, i, totalPeople);
+
+      const ageIndexMap = {
+        'Age_0_19': 0,
+        'Age_20_34': 1,
+        'Age_35_54': 2,
+        'Age_55_plus': 2  // group 35+ as "Older"
+      };
+      person.targetAgeIndex = ageIndexMap[ageChoice];
+
+      // Education
+      const eduChoice = this.getWeightedCategory({
+        Edu_Below_High_School: snapshot.Edu_Below_High_School,
+        Edu_High_School: snapshot.Edu_High_School,
+        Edu_Some_College: snapshot.Edu_Some_College,
+        Edu_Bachelor_or_Above: snapshot.Edu_Bachelor_or_Above
+      }, i, totalPeople);
+
+      const eduIndexMap = {
+        Edu_Below_High_School: 0,
+        Edu_High_School: 1,
+        Edu_Some_College: 1,
+        Edu_Bachelor_or_Above: 2
+      };
+      person.targetEducationLevel = eduIndexMap[eduChoice];
+
+      person.update(progress); // update mesh
+    }
+
   }
 }
 
