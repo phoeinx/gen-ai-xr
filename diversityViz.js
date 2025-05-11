@@ -57,6 +57,11 @@ export class DiversityVisualizer {
     this._animate();
     this._addEventListeners();
 
+    this.snapshotData = [];
+    this.loadData().then(() => {
+    console.log('Snapshot data loaded:', this.snapshotData.length, 'entries');
+    });
+
     this.renderer.xr.enabled = true;
     document.body.appendChild(VRButton.createButton(this.renderer));
   }
@@ -160,6 +165,17 @@ export class DiversityVisualizer {
       const z = (Math.floor(i / cols) - rows / 2) * spacing;
       this.people.push(new Person(i, originalRaceIndices[i], targetRaceIndices[i], ageIndex, 0, educationLevel, 2, x, z, this));
     }
+  }
+
+  async loadData() {
+    const response = await fetch('./data/data_CDV.json'); // adjust path if needed
+    const rawData = await response.json();
+
+    // Sort by corp_own_rate (ascending)
+    rawData.sort((a, b) => a.corp_own_rate - b.corp_own_rate);
+
+    // Store full data
+    this.snapshotData = rawData;
   }
 
   _animate() {
