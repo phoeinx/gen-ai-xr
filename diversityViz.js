@@ -10,6 +10,9 @@ export class DiversityVisualizer {
     this.updateInterval = 500; // milliseconds
     this.lastScrubProgress = null;
 
+    this.snapshotData = [];
+    this.snapshotReady = false;
+
     this.container = container;
     this.people = [];
     this.highlighted = null;
@@ -176,6 +179,51 @@ export class DiversityVisualizer {
 
     // Store full data
     this.snapshotData = rawData;
+    this.snapshotReady = true;
+    console.log('Snapshot data loaded:', this.snapshotData.length);
+  }
+
+  getInterpolatedSnapshot(progress) {
+    if (!this.snapshotReady || !this.snapshotData || this.snapshotData.length === 0) {
+      console.warn('Snapshot data not ready');
+      return null;
+    }
+
+    const snapshots = this.snapshotData;
+    const minRate = snapshots[0].corp_own_rate;
+    const maxRate = snapshots[snapshots.length - 1].corp_own_rate;
+
+    // Convert progress to corp_own_rate
+    const targetRate = minRate + progress * (maxRate - minRate);
+
+    // Find the two snapshots that bound this rate
+    let lower = snapshots[0];
+    let upper = snapshots[snapshots.length - 1];
+
+    for (let i = 0; i < snapshots.length - 1; i++) {
+      if (
+        snapshots[i].corp_own_rate <= targetRate &&
+        snapshots[i + 1].corp_own_rate >= targetRate
+      ) {
+        lower = snapshots[i];
+        upper = snapshots[i + 1];
+        break;
+      }
+    }
+
+    const t = (targetRate - lower.corp_own_rate) / (upper.corp_own_rate - lower.corp_own_rate);
+
+    // Interpolate all fields
+    const result = {};
+    for (const key in lower) {
+      if (key === 'corp_own_rate') {
+        result[key] = targetRate;
+      } else {
+        result[key] = lower[key] + (upper[key] - lower[key]) * t;
+      }
+    }
+
+    return result;
   }
 
   _animate() {
@@ -386,7 +434,10 @@ export class DiversityVisualizer {
   }
 
   update(progress) {
+    const snapshot = this.getInterpolatedSnapshot(progress);
+    if (!snapshot) return; // wait until data is loaded
     this.lastProgress = progress;
+    this.currentSnapshot = snapshot;
     this.people.forEach(p => p.update(progress));
   }
 }
