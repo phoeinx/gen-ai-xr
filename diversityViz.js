@@ -298,7 +298,8 @@ export class DiversityVisualizer {
       this.highlighted = target;
 
       if (this.highlighted) {
-        const data = this.highlighted.getDisplayData();
+        // const data = this.highlighted.getDisplayData();
+        const data = this.highlighted.getDisplayData(this.lastProgress);
         const lines = [
           `ID: ${data.index}`,
           `Race: ${data.race}`,
@@ -626,13 +627,30 @@ createEducationMesh(level) {
     return this.viz.config.ageHeights[this.ageIndex];
   }
 
-  getDisplayData() {
+  getDisplayData(progress = 0) {
+    const threshold = this.index / this.viz.totalPeople;
+
+    const raceIndex = progress >= threshold ? this.targetRace : this.originalRace;
+    const ageIndex = progress >= threshold ? this.targetAgeIndex : this.ageIndex;
+    const eduLevel = progress >= threshold ? this.targetEducationLevel : this.educationLevel;
+
     const { raceLabels, ageLabels, eduLabels } = this.viz.config;
+
     return {
       index: this.index,
-      race: raceLabels[this.originalRace],
-      age: ageLabels[this.ageIndex],
-      education: eduLabels[this.educationLevel]
+      race: raceLabels[raceIndex],
+      age: ageLabels[ageIndex],
+      education: eduLabels[eduLevel]
     };
   }
+
+  // getDisplayData() {
+  //   const { raceLabels, ageLabels, eduLabels } = this.viz.config;
+  //   return {
+  //     index: this.index,
+  //     race: raceLabels[this.originalRace],
+  //     age: ageLabels[this.ageIndex],
+  //     education: eduLabels[this.educationLevel]
+  //   };
+  // }
 } 
