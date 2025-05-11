@@ -44,6 +44,8 @@ export class DiversityVisualizer {
       spacing: 2
     };
 
+    this.config.clusterCenter = { x: 12, z: 0 }; // your chosen center
+
     this.corridorBounds = {
       xMin: -2,
       xMax: 2,
@@ -186,8 +188,11 @@ export class DiversityVisualizer {
     for (let i = 0; i < this.totalPeople; i++) {
       const ageIndex = Math.floor(Math.random() * ageHeights.length);
       const educationLevel = Math.floor(Math.random() * 3);
-      const x = (i % cols - cols / 2) * spacing;
-      const z = (Math.floor(i / cols) - rows / 2) * spacing;
+      const centerX = this.config.clusterCenter.x;
+      const centerZ = this.config.clusterCenter.z;
+
+      const x = centerX + (i % cols - cols / 2) * spacing;
+      const z = centerZ + (Math.floor(i / cols) - rows / 2) * spacing;
       this.people.push(new Person(i, originalRaceIndices[i], targetRaceIndices[i], ageIndex, 0, educationLevel, 2, x, z, this));
     }
   }
@@ -656,7 +661,12 @@ createEducationMesh(level) {
       }
     }
 
-    const toCenter = new THREE.Vector2(0, 0).sub(pos);
+    // const toCenter = new THREE.Vector2(10, -5).sub(pos);
+    const center = new THREE.Vector2(
+      this.viz.config.clusterCenter.x,
+      this.viz.config.clusterCenter.z
+    );
+    const toCenter = center.clone().sub(pos);
     force.add(toCenter.multiplyScalar(cfg.centerAttraction));
 
     vel.add(force);
