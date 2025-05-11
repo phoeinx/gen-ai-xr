@@ -99,6 +99,46 @@ export class DiversityVisualizer {
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.container.appendChild(this.renderer.domElement);
 
+    const skyGeometry = new THREE.SphereGeometry(100, 32, 32); // big enough to surround scene
+    skyGeometry.scale(-1, -1, 1); // invert normals to render inside
+
+    // Custom shader for vertical gradient
+    const skyMaterial = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      uniforms: {
+        topColor: { value: new THREE.Color(0x87ceeb) },   // sky blue
+        bottomColor: { value: new THREE.Color(0xcccccc) }, // light gray ground tone
+        offset: { value: 0.01 },
+        exponent: { value: 0.6 }
+      },
+      vertexShader: `
+        varying float vY;
+        void main() {
+          vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+          vY = normalize(worldPosition.xyz).y;
+          gl_Position = projectionMatrix * viewMatrix * worldPosition;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 topColor;
+        uniform vec3 bottomColor;
+        uniform float offset;
+        uniform float exponent;
+        varying float vY;
+        void main() {
+          float h = max(vY + offset, 0.0);
+          h = pow(h, exponent);
+          gl_FragColor = vec4(mix(bottomColor, topColor, h), 1.0);
+        }
+      `
+    });
+
+    this.skyDome = new THREE.Mesh(skyGeometry, skyMaterial);
+    this.scene.add(this.skyDome);
+
+    // this.skyDome.material.uniforms.topColor.value.set(0xffe0b2);   // peach
+    this.skyDome.material.uniforms.bottomColor.value.set(0x444444); // dark ground
+
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(10, 10, 10);
     this.scene.add(light);
@@ -133,8 +173,8 @@ export class DiversityVisualizer {
     const grassMaterial = new THREE.MeshStandardMaterial({
       color: 0x228B22, // forest green
       side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.4
+      transparent: false
+      // opacity: 0.4
     });
 
     this.grassPlane = new THREE.Mesh(grassGeometry, grassMaterial);
