@@ -298,7 +298,6 @@ export class DiversityVisualizer {
       this.highlighted = target;
 
       if (this.highlighted) {
-        // const data = this.highlighted.getDisplayData();
         const data = this.highlighted.getDisplayData(this.lastProgress);
         const lines = [
           `ID: ${data.index}`,
@@ -332,7 +331,7 @@ export class DiversityVisualizer {
       // Highlight new one
       if (this.highlighted) {
         this.highlighted.mesh.material.emissive.setHex(0x444444);
-        const data = this.highlighted.getDisplayData();
+        const data = this.highlighted.getDisplayData(this.lastProgress);
         window.parent.postMessage({ type: 'hover-info', data }, '*');
       } else {
         window.parent.postMessage({ type: 'hover-info', data: null }, '*');
@@ -342,7 +341,6 @@ export class DiversityVisualizer {
     this.people.forEach(p => p.applyClusteringForce(this.lastProgress));
 
     // --- Update user camera position and show it on the label ---
-    // const camPos = this.camera.position;
 
     const camPos = new THREE.Vector3();
     this.camera.getWorldPosition(camPos);
@@ -357,8 +355,6 @@ export class DiversityVisualizer {
 
     if (inCorridor) {
       // Clamp and normalize Z to [0, 1]
-      // const z = THREE.MathUtils.clamp(camPos.z, this.corridorBounds.zMin, this.corridorBounds.zMax);
-      // const progress = (z - this.corridorBounds.zMin) / (this.corridorBounds.zMax - this.corridorBounds.zMin);
       const z = this.sliderFollower.position.z;
       const progress = (z - this.corridorBounds.zMin) / (this.corridorBounds.zMax - this.corridorBounds.zMin);
 
@@ -450,7 +446,6 @@ export class DiversityVisualizer {
     if (!snapshot) return; // wait until data is loaded
     this.lastProgress = progress;
     this.currentSnapshot = snapshot;
-    // this.people.forEach(p => p.update(progress));
     const totalPeople = this.people.length;
 
     for (let i = 0; i < totalPeople; i++) {
@@ -644,13 +639,4 @@ createEducationMesh(level) {
     };
   }
 
-  // getDisplayData() {
-  //   const { raceLabels, ageLabels, eduLabels } = this.viz.config;
-  //   return {
-  //     index: this.index,
-  //     race: raceLabels[this.originalRace],
-  //     age: ageLabels[this.ageIndex],
-  //     education: eduLabels[this.educationLevel]
-  //   };
-  // }
 } 
