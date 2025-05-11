@@ -57,7 +57,6 @@ export class DiversityVisualizer {
     this._animate();
     this._addEventListeners();
 
-
     this.renderer.xr.enabled = true;
     document.body.appendChild(VRButton.createButton(this.renderer));
   }
