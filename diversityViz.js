@@ -149,6 +149,21 @@ export class DiversityVisualizer {
     this.sliderFollower = new THREE.Mesh(puckGeometry, puckMaterial);
     this.sliderFollower.position.set(0, 0.025, 0); // just above ground
     this.scene.add(this.sliderFollower);
+
+    const puckCanvas = document.createElement('canvas');
+    puckCanvas.width = 300;
+    puckCanvas.height = 64;
+
+    const puckCtx = puckCanvas.getContext('2d');
+    puckCtx.fillStyle = 'white';
+    puckCtx.font = '18px sans-serif';
+    puckCtx.fillText('Corporate ownership: 0%', 10, 40);
+    const puckLabelTexture = new THREE.CanvasTexture(puckCanvas);
+    const puckLabelMaterial = new THREE.SpriteMaterial({ map: puckLabelTexture, transparent: true });
+    this.puckLabel = new THREE.Sprite(puckLabelMaterial);
+    this.puckLabel.scale.set(2, 0.5, 1);
+    this.puckLabel.position.set(0, 1.0, 0); // floats above the puck
+    this.sliderFollower.add(this.puckLabel); // attach to puck
   }
 
   _initPeople() {
@@ -375,6 +390,18 @@ export class DiversityVisualizer {
         this.update(progress);
         this.lastUpdateTime = now;
         this.lastScrubProgress = progress;
+
+        if (this.snapshotReady && this.currentSnapshot) {
+          const canvas = this.puckLabel.material.map.image;
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          const percent = Math.round(this.currentSnapshot.corp_own_rate);
+          ctx.fillStyle = 'white';
+          ctx.font = '18px sans-serif';
+          ctx.fillText(`Corporate ownership: ${percent}%`, 10, 40);
+          this.puckLabel.material.map.needsUpdate = true;
+        }
       }
 
       this.scrubStatus = `ACTIVE`;
@@ -403,7 +430,7 @@ export class DiversityVisualizer {
     ctx.fillText(`Z: ${camPos.z.toFixed(2)}`, 10, 100);
     ctx.fillText(`Mode: ${this.scrubStatus}`, 10, 130);
     if (this.scrubStatus === 'ACTIVE') {
-      ctx.fillText(`Ownership: ${this.scrubProgress.toFixed(2)}`, 10, 160);
+      ctx.fillText(`Corporate ownership: ${this.scrubProgress.toFixed(2)}`, 10, 160);
     }
 
     this.positionLabel.material.map.needsUpdate = true;
