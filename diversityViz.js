@@ -134,13 +134,13 @@ export class DiversityVisualizer {
     // --- Label for hovered person ---
     const hoverCanvas = document.createElement('canvas');
     hoverCanvas.width = 512;
-    hoverCanvas.height = 128;
+    hoverCanvas.height = 256;
     const hoverCtx = hoverCanvas.getContext('2d');
 
     const hoverTexture = new THREE.CanvasTexture(hoverCanvas);
     const hoverMaterial = new THREE.SpriteMaterial({ map: hoverTexture, transparent: true });
     this.hoverLabel = new THREE.Sprite(hoverMaterial);
-    this.hoverLabel.scale.set(3, 1, 1); // size of label
+    this.hoverLabel.scale.set(3, 1.2, 1); // size of label
     this.hoverLabel.visible = false;
     this.scene.add(this.hoverLabel);
 
@@ -310,8 +310,12 @@ export class DiversityVisualizer {
           `ID: ${data.index}`,
           `Race: ${data.race}`,
           `Age: ${data.age}`,
-          `Education: ${data.education}`
+          `Education: ${data.education}`,
+          `Job: ${data.job}`
         ];
+        // if (data.job) {
+        //   lines.push(`Job: ${data.job}`);
+        // }
 
         // Draw on canvas
         const canvas = this.hoverLabel.material.map.image;
@@ -320,7 +324,7 @@ export class DiversityVisualizer {
         ctx.fillStyle = 'white';
         ctx.font = '28px monospace';
         lines.forEach((line, i) => {
-          ctx.fillText(line, 10, 40 + i * 30);
+          ctx.fillText(line, 10, 30 + i * 24);
         });
         this.hoverLabel.material.map.needsUpdate = true;
 
