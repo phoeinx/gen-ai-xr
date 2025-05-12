@@ -142,6 +142,11 @@ export class DiversityVisualizer {
     this.cameraRig.add(this.camera);
     this.scene.add(this.cameraRig);
 
+    this.raycaster = new THREE.Raycaster();
+    this.renderer = new THREE.WebGLRenderer();
+    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+    this.container.appendChild(this.renderer.domElement);
+
     this.renderer.xr.addEventListener('sessionstart', () => {
       this.cameraRig.position.y = 0; // zero height for VR
     });
@@ -150,11 +155,6 @@ export class DiversityVisualizer {
       this.cameraRig.position.y = 1.6;
       this.inVR = false;
     });
-
-    this.raycaster = new THREE.Raycaster();
-    this.renderer = new THREE.WebGLRenderer();
-    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
-    this.container.appendChild(this.renderer.domElement);
 
     const skyGeometry = new THREE.SphereGeometry(100, 32, 32); // big enough to surround scene
     skyGeometry.scale(-1, -1, 1); // invert normals to render inside
