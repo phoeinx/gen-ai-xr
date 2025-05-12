@@ -7,7 +7,7 @@ import { VRButton } from './VRButton.js';
 export class DiversityVisualizer {
   constructor(container) {
     this.lastUpdateTime = 0;
-    this.updateInterval = 500; // milliseconds
+    this.updateInterval = 1000; // milliseconds
     this.lastScrubProgress = null;
 
     this.snapshotData = [];
@@ -664,6 +664,8 @@ export class DiversityVisualizer {
   }
 
   update(progress) {
+    if (Math.abs(progress - this.lastScrubProgress) < 0.002) return;
+
     const snapshot = this.getInterpolatedSnapshot(progress);
     if (!snapshot) return; // wait until data is loaded
     this.lastProgress = progress;
@@ -802,6 +804,8 @@ class Person {
     this.position2D = new THREE.Vector2(x, z);
     this.originalPosition = this.position2D.clone();
 
+    this.lastHeight = null;
+
     const geometry = new THREE.CylinderGeometry(0.5, 0.5, 0.2, 32);
     const material = new THREE.MeshStandardMaterial({ color: viz.config.raceColors[this.originalRace], emissive: 0x000000 });
     this.mesh = new THREE.Mesh(geometry, material);
@@ -885,19 +889,25 @@ createEducationMesh(level) {
 
   update(progress) {
     const threshold = this.index / this.viz.totalPeople;
-    const raceIndex = progress >= threshold ? this.targetRace : this.originalRace;
-    const ageIndex = progress >= threshold ? this.targetAgeIndex : this.ageIndex;
-    const eduLevel = progress >= threshold ? this.targetEducationLevel : this.educationLevel;
+    const snapTolerance = 0.002;
+    const raceIndex = progress >= threshold + snapTolerance ? this.targetRace : this.originalRace;
+    const ageIndex = progress >= threshold + snapTolerance ? this.targetAgeIndex : this.ageIndex;
+    const eduLevel = progress >= threshold + snapTolerance ? this.targetEducationLevel : this.educationLevel;
 
     const height = this.viz.config.ageHeights[ageIndex];
-    this.mesh.material.color.setHex(this.viz.config.raceColors[raceIndex]);
-    this.mesh.scale.y = height / 0.2;
-    this.mesh.position.y = height / 2;
+    if (this.lastHeight !== height) {
+      this.mesh.material.color.setHex(this.viz.config.raceColors[raceIndex]);
+      this.mesh.scale.y = height / 0.2;
+      this.mesh.position.y = height / 2;
+    }
 
-    this.viz.scene.remove(this.eduMesh);
-    this.eduMesh = this.createEducationMesh(eduLevel);
+    if (this.currentEduLevel !== eduLevel) {
+      if (this.eduMesh) this.viz.scene.remove(this.eduMesh);
+      this.eduMesh = this.createEducationMesh(eduLevel);
+      this.viz.scene.add(this.eduMesh);
+      this.currentEduLevel = eduLevel;
+    }
     this.eduMesh.position.set(this.x, height + 0.1, this.z);
-    this.viz.scene.add(this.eduMesh);
   }
 
   getHeight() {
