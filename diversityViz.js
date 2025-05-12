@@ -46,6 +46,9 @@ export class DiversityVisualizer {
 
     this.config.clusterCenter = { x: 12, z: 0 }; // your chosen center
 
+    this.firstNames = ['Alex', 'Jordan', 'Taylor', 'Casey', 'Morgan', 'Riley', 'Jamie', 'Robin', 'Sky', 'Devon'];
+    this.lastNames = ['Lee', 'Garcia', 'Patel', 'Kim', 'Jordan', 'Nguyen', 'Smith', 'Chen', 'Hernandez', 'Okafor'];
+
     this.skyTopColorStart = new THREE.Color(0x87ceeb); // soft blue
     // set color to dark mid gray
     this.skyTopColorEnd = new THREE.Color(0x444444); // dark gray
@@ -324,12 +327,16 @@ export class DiversityVisualizer {
     for (let i = 0; i < this.totalPeople; i++) {
       const ageIndex = Math.floor(Math.random() * ageHeights.length);
       const educationLevel = Math.floor(Math.random() * 3);
+      const first = this.firstNames[i % this.firstNames.length];
+      const last = this.lastNames[Math.floor(i / this.firstNames.length) % this.lastNames.length];
+      const fullName = `${first} ${last}`;
+
       const centerX = this.config.clusterCenter.x;
       const centerZ = this.config.clusterCenter.z;
 
       const x = centerX + (i % cols - cols / 2) * spacing;
       const z = centerZ + (Math.floor(i / cols) - rows / 2) * spacing;
-      this.people.push(new Person(i, originalRaceIndices[i], targetRaceIndices[i], ageIndex, 0, educationLevel, 2, x, z, this));
+      this.people.push(new Person(i, originalRaceIndices[i], targetRaceIndices[i], ageIndex, 0, educationLevel, 2, x, z, fullName, this));
     }
   }
 
@@ -463,7 +470,7 @@ export class DiversityVisualizer {
       if (this.highlighted) {
         const data = this.highlighted.getDisplayData(this.lastProgress);
         const lines = [
-          `ID: ${data.index}`,
+          `Name: ${data.name}`,
           `Race: ${data.race}`,
           `Age: ${data.age}`,
           `Education: ${data.education}`,
@@ -679,7 +686,7 @@ export class DiversityVisualizer {
           gray,
           uniformity
         );
-        console.log('Uniformity (progress):', uniformity);
+        // console.log('Uniformity (progress):', uniformity);
         mesh.material.color.copy(currentColor);
       }
     }
@@ -758,7 +765,8 @@ export class DiversityVisualizer {
 }
 
 class Person {
-  constructor(index, originalRace, targetRace, ageIndex, targetAgeIndex, educationLevel, targetEducationLevel, x, z, viz) {
+  constructor(index, originalRace, targetRace, ageIndex, targetAgeIndex, educationLevel, targetEducationLevel, x, z, name, viz) {
+    this.name = name;
     this.index = index;
     this.originalRace = originalRace;
     this.targetRace = targetRace;
@@ -887,7 +895,8 @@ createEducationMesh(level) {
 
     // console.log(`Person ${this.index} job:`, this.targetJobCategory);
     return {
-      index: this.index,
+      // index: this.index,
+      name: this.name,
       race: raceLabels[raceIndex],
       age: ageLabels[ageIndex],
       education: eduLabels[eduLevel],

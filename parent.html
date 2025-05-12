@@ -80,9 +80,9 @@
     const msg = event.data;
     if (msg?.type === 'hover-info') {
       if (msg.data) {
-        const { index, race, age, education, job } = msg.data;
+        const { name, race, age, education, job } = msg.data;
         infoContent.innerHTML = `
-          <strong>ID:</strong> ${index}<br>
+          <strong>Name:</strong> ${name}<br>
           <strong>Race:</strong> ${race}<br>
           <strong>Age:</strong> ${age}<br>
           <strong>Education:</strong> ${education}<br>
@@ -111,9 +111,9 @@
     const msg = event.data;
     if (msg?.type === 'hover-info') {
       if (msg.data) {
-        const { index, race, age, education, job } = msg.data;
+        const { name, race, age, education, job } = msg.data;
         infoContent.innerHTML = `
-          <strong>ID:</strong> ${index}<br>
+          <strong>Name:</strong> ${name}<br>
           <strong>Race:</strong> ${race}<br>
           <strong>Age:</strong> ${age}<br>
           <strong>Education:</strong> ${education}<br>
