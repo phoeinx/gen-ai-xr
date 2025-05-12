@@ -440,7 +440,7 @@ export class DiversityVisualizer {
     return cumulative[cumulative.length - 1].key;
   }
 
-  playHighlightSound() {
+  playHighlightSound(frequency = 800) {
     const ctx = this.audioCtx;
     const now = ctx.currentTime;
 
@@ -448,7 +448,7 @@ export class DiversityVisualizer {
     const gainNode = ctx.createGain();
 
     oscillator.type = 'sine';       // try 'triangle', 'square', 'sawtooth' too
-    oscillator.frequency.setValueAtTime(800, now); // pitch in Hz
+    oscillator.frequency.setValueAtTime(frequency, now); // pitch in Hz
 
     gainNode.gain.setValueAtTime(0.1, now);       // volume
     gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.2); // fade out
@@ -512,8 +512,8 @@ export class DiversityVisualizer {
       }
 
       this.highlighted = target;
-      this.playHighlightSound();
 
+      // const data = this.highlighted.getDisplayData(this.lastProgress);
       if (this.highlighted) {
         const data = this.highlighted.getDisplayData(this.lastProgress);
         const lines = [
@@ -523,6 +523,15 @@ export class DiversityVisualizer {
           `Education: ${data.education}`,
           `Job: ${data.job}`
         ];
+
+        const agePitchMap = {
+          '0-19': 900,
+          '20-34': 400,
+          '35+': 300
+        };
+      const pitch = agePitchMap[data.age] ?? 500;
+      this.playHighlightSound(pitch);
+
         // if (data.job) {
         //   lines.push(`Job: ${data.job}`);
         // }
