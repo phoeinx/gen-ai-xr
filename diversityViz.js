@@ -39,8 +39,8 @@ export class DiversityVisualizer {
       ageLabels: ['0–19', '20–34', '35+'],
       // eduLabels: ['None', 'Medium', 'High'],
       eduLabels: ['< High School', 'High School / Some College', 'Bachelor or Above'],
-      cols: 10,
-      rows: 10,
+      cols: 8,
+      rows: 14,
       spacing: 2
     };
 
