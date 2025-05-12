@@ -142,6 +142,15 @@ export class DiversityVisualizer {
     this.cameraRig.add(this.camera);
     this.scene.add(this.cameraRig);
 
+    this.renderer.xr.addEventListener('sessionstart', () => {
+      this.cameraRig.position.y = 0; // zero height for VR
+    });
+    this.renderer.xr.addEventListener('sessionend', () => {
+      console.log('Exited VR — restoring camera Y to 1.6');
+      this.cameraRig.position.y = 1.6;
+      this.inVR = false;
+    });
+
     this.raycaster = new THREE.Raycaster();
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
