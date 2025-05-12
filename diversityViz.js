@@ -327,8 +327,10 @@ export class DiversityVisualizer {
     const puckLabelMaterial = new THREE.SpriteMaterial({ map: puckLabelTexture, transparent: true });
     this.puckLabel = new THREE.Sprite(puckLabelMaterial);
     this.puckLabel.scale.set(2, 0.6, 1);
-    this.puckLabel.position.set(0, 1.0, 0); // floats above the puck
+    this.puckLabel.position.set(0, 0.2, 0); // floats above the puck
     this.sliderFollower.add(this.puckLabel); // attach to puck
+
+    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
 
   _initPeople() {
@@ -438,6 +440,26 @@ export class DiversityVisualizer {
     return cumulative[cumulative.length - 1].key;
   }
 
+  playHighlightSound() {
+    const ctx = this.audioCtx;
+    const now = ctx.currentTime;
+
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    oscillator.type = 'sine';       // try 'triangle', 'square', 'sawtooth' too
+    oscillator.frequency.setValueAtTime(800, now); // pitch in Hz
+
+    gainNode.gain.setValueAtTime(0.1, now);       // volume
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.2); // fade out
+
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    oscillator.start(now);
+    oscillator.stop(now + 0.2); // short duration
+  }
+
   _animate() {
     const moveSpeed = 0.1;
 
@@ -490,6 +512,7 @@ export class DiversityVisualizer {
       }
 
       this.highlighted = target;
+      this.playHighlightSound();
 
       if (this.highlighted) {
         const data = this.highlighted.getDisplayData(this.lastProgress);
