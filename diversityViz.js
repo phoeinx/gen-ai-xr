@@ -57,8 +57,8 @@ export class DiversityVisualizer {
     this.corridorBounds = {
       xMin: -1,
       xMax: 1,
-      zMin: -5,
-      zMax: 5  // for now, not enforced but available
+      zMin: 0,
+      zMax: 4  // for now, not enforced but available
     };
 
     this.moveState = { forward: 0, right: 0 };
@@ -252,8 +252,8 @@ export class DiversityVisualizer {
     this.grassPlane.position.set(cgx - 6, 0, cgz); // 6 units left in X
     this.scene.add(this.grassPlane);
 
-    const axesHelper = new THREE.AxesHelper(10);
-    this.scene.add(axesHelper);
+    // const axesHelper = new THREE.AxesHelper(10);
+    // this.scene.add(axesHelper);
 
     this.renderer.xr.addEventListener('sessionstart', () => {
       this.inVR = true;
