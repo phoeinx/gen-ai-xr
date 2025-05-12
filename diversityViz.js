@@ -139,6 +139,7 @@ export class DiversityVisualizer {
 
     this.cameraRig = new THREE.Object3D();
     this.cameraRig.position.set(0, 1.6, 0); // seated height
+    this.cameraRig.rotation.y = Math.PI; // face forward
     this.cameraRig.add(this.camera);
     this.scene.add(this.cameraRig);
 
@@ -146,6 +147,30 @@ export class DiversityVisualizer {
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.container.appendChild(this.renderer.domElement);
+
+    const zMin = this.corridorBounds.zMin;
+    const zMax = this.corridorBounds.zMax;
+    const trackLength = zMax - zMin;
+    const trackWidth = 0.5; // narrow strip under puck
+
+    const trackGeometry = new THREE.PlaneGeometry(trackWidth, trackLength);
+    const trackMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.4
+    });
+
+    this.puckTrack = new THREE.Mesh(trackGeometry, trackMaterial);
+    this.puckTrack.rotation.x = -Math.PI / 2; // lay flat on ground
+
+    // Position it in the center of the Z range, aligned with the puck's X
+    // const cX = this.config.clusterCenter?.x || 0;
+    const cX = 0
+    const cZ = (zMin + zMax) / 2;
+
+    this.puckTrack.position.set(cX, 0.1, cZ); // small Y offset avoids z-fighting
+    this.scene.add(this.puckTrack);
 
     this.renderer.xr.addEventListener('sessionstart', () => {
       this.cameraRig.position.y = 0; // zero height for VR
@@ -279,7 +304,8 @@ export class DiversityVisualizer {
     this.positionLabel.scale.set(1.2, 0.4, 1);
     this.positionLabel.position.set(0, 2, -2); // Initial position in the scene
     this.camera.add(this.positionLabel);
-    this.positionLabel.position.set(-0.8, -0.8, -1.5); // In front of camera, slightly below eye level
+    this.positionLabel.position.set(-0.8, -0.8, 1.5); // In front of camera, slightly below eye level
+    // this.positionLabel.position.set(-0.8, -0.8, -1.5); // In front of camera, slightly below eye level
 
     // --- Label for hovered person ---
     const hoverCanvas = document.createElement('canvas');
