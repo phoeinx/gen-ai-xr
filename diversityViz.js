@@ -83,6 +83,40 @@ export class DiversityVisualizer {
     document.body.appendChild(VRButton.createButton(this.renderer));
   }
 
+  createBuildingArray({ centerX, centerZ, countX, countZ, spacing, irregularity }) {
+    this.buildings = []; // store for future updates
+
+    const startX = centerX - ((countX - 1) * spacing) / 2;
+    const startZ = centerZ - ((countZ - 1) * spacing) / 2;
+
+    for (let i = 0; i < countX; i++) {
+      for (let j = 0; j < countZ; j++) {
+        // Position
+        const x = (startX + i * spacing) + (Math.random() - 0.2) * irregularity;
+        // const x = startX + i * spacing;
+        const z = startZ + j * spacing;
+
+        // Irregular height and color
+        const height = THREE.MathUtils.lerp(4, 7, irregularity * Math.random());
+        const color = new THREE.Color().lerpColors(
+          new THREE.Color(0x888888),
+          new THREE.Color(Math.random(), Math.random(), Math.random()),
+          irregularity
+        );
+
+        const geometry = new THREE.BoxGeometry(1, height, 2.2);
+        const material = new THREE.MeshStandardMaterial({ color });
+
+        const building = new THREE.Mesh(geometry, material);
+        building.position.set(x, height / 2, z); // place on ground
+        this.scene.add(building);
+
+        this.buildings.push({ mesh: building, baseHeight: height });
+      }
+    }
+  }
+
+
   _initScene() {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(
@@ -148,6 +182,15 @@ export class DiversityVisualizer {
     light.position.set(10, 10, 10);
     this.scene.add(light);
     this.scene.add(new THREE.AmbientLight(0x404040));
+
+    this.createBuildingArray({
+      centerX: -6,
+      centerZ: 0,
+      countX: 1,
+      countZ: 24,
+      spacing: 1.8,
+      irregularity: 1.0 // maximum randomness at startup
+    });
 
     const alleyWidth = 4;    // X direction (side-to-side)
     const alleyLength = 40;  // Z direction (forward-back)
@@ -605,6 +648,28 @@ export class DiversityVisualizer {
 
     this.currentSnapshot = snapshot;
     const totalPeople = this.people.length;
+
+    if (this.buildings?.length) {
+      const uniformity = progress; // 0 = random, 1 = uniform
+      const baseColor = new THREE.Color(0x888888);
+
+      for (const { mesh, baseHeight } of this.buildings) {
+        const h = THREE.MathUtils.lerp(baseHeight, 6, uniformity);
+        mesh.scale.y = h / mesh.geometry.parameters.height;
+        mesh.position.y = h / 2;
+
+        const currentColor = new THREE.Color().lerpColors(
+          new THREE.Color(
+            Math.random() * (1 - uniformity),
+            Math.random() * (1 - uniformity),
+            Math.random() * (1 - uniformity)
+          ),
+          baseColor,
+          uniformity
+        );
+        mesh.material.color.copy(currentColor);
+      }
+    }
 
     for (let i = 0; i < totalPeople; i++) {
       const person = this.people[i];
