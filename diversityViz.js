@@ -98,20 +98,26 @@ export class DiversityVisualizer {
 
         // Irregular height and color
         const height = THREE.MathUtils.lerp(4, 7, irregularity * Math.random());
-        const color = new THREE.Color().lerpColors(
+        const baseColor = new THREE.Color(Math.random(), Math.random(), Math.random());
+        const visibleColor = new THREE.Color().lerpColors(
+          baseColor,
           new THREE.Color(0x888888),
-          new THREE.Color(Math.random(), Math.random(), Math.random()),
-          irregularity
+          1 - irregularity
         );
 
         const geometry = new THREE.BoxGeometry(1, height, 2.2);
-        const material = new THREE.MeshStandardMaterial({ color });
+        const material = new THREE.MeshStandardMaterial({ color: visibleColor });
 
         const building = new THREE.Mesh(geometry, material);
         building.position.set(x, height / 2, z); // place on ground
         this.scene.add(building);
 
-        this.buildings.push({ mesh: building, baseHeight: height });
+        this.buildings.push({
+          mesh: building,
+          baseHeight: height,
+          baseColor: baseColor
+        });
+
       }
     }
   }
@@ -651,22 +657,29 @@ export class DiversityVisualizer {
 
     if (this.buildings?.length) {
       const uniformity = progress; // 0 = random, 1 = uniform
-      const baseColor = new THREE.Color(0x888888);
+      // const baseColor = new THREE.Color(0x888888);
 
-      for (const { mesh, baseHeight } of this.buildings) {
+      for (const { mesh, baseHeight, baseColor } of this.buildings) {
         const h = THREE.MathUtils.lerp(baseHeight, 6, uniformity);
         mesh.scale.y = h / mesh.geometry.parameters.height;
         mesh.position.y = h / 2;
 
+        // const currentColor = new THREE.Color().lerpColors(
+        //   new THREE.Color(
+        //     Math.random() * (1 - uniformity),
+        //     Math.random() * (1 - uniformity),
+        //     Math.random() * (1 - uniformity)
+        //   ),
+        //   baseColor,
+        //   uniformity
+        // );
+        const gray = new THREE.Color(0x888888);
         const currentColor = new THREE.Color().lerpColors(
-          new THREE.Color(
-            Math.random() * (1 - uniformity),
-            Math.random() * (1 - uniformity),
-            Math.random() * (1 - uniformity)
-          ),
           baseColor,
+          gray,
           uniformity
         );
+        console.log('Uniformity (progress):', uniformity);
         mesh.material.color.copy(currentColor);
       }
     }
