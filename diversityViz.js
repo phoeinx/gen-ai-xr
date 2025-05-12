@@ -288,8 +288,23 @@ export class DiversityVisualizer {
     const puckGeometry = new THREE.BoxGeometry(3.0, 0.05, 0.4);
     const puckMaterial = new THREE.MeshStandardMaterial({ color: 0xff8800 });
     this.sliderFollower = new THREE.Mesh(puckGeometry, puckMaterial);
-    this.sliderFollower.position.set(0, 0.025, 0); // just above ground
+    this.sliderFollower.position.set(0, 0.25, 0); // just above ground
     this.scene.add(this.sliderFollower);
+
+    const ringGeometry = new THREE.RingGeometry(0.6, 0.8, 32);
+    const ringMaterial = new THREE.MeshBasicMaterial({
+      color: 0x00ff00, // bright green
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.7
+    });
+
+    this.puckGlow = new THREE.Mesh(ringGeometry, ringMaterial);
+    this.puckGlow.rotation.x = -Math.PI / 2; // lie flat
+    this.puckGlow.visible = false;
+
+    this.sliderFollower.add(this.puckGlow);
+    this.puckGlow.position.set(0, -0.025, 0); // just under the puck
 
     const puckCanvas = document.createElement('canvas');
     puckCanvas.width = 300;
@@ -572,6 +587,11 @@ export class DiversityVisualizer {
       this.scrubProgress = progress;
     } else {
       this.scrubStatus = `FROZEN`;
+    }
+
+
+    if (this.puckGlow) {
+      this.puckGlow.visible = this.scrubStatus === 'ACTIVE';
     }
 
     if (this.scrubStatus === 'ACTIVE') {
