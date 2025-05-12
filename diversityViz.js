@@ -86,6 +86,17 @@ export class DiversityVisualizer {
     document.body.appendChild(VRButton.createButton(this.renderer));
   }
 
+  setZMax(newZMax) {
+    const zMin = this.corridorBounds.zMin;
+    this.corridorBounds.zMax = newZMax;
+
+    // Update puck track geometry and position
+    const trackLength = newZMax - zMin;
+    this.puckTrack.geometry.dispose(); // cleanup old geometry
+    this.puckTrack.geometry = new THREE.PlaneGeometry(0.3, trackLength);
+    this.puckTrack.position.z = (zMin + newZMax) / 2;
+  }
+
   createBuildingArray({ centerX, centerZ, countX, countZ, spacing, irregularity }) {
     this.buildings = []; // store for future updates
 
