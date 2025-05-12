@@ -202,7 +202,7 @@ export class DiversityVisualizer {
     });
 
     const alleyWidth = 4;    // X direction (side-to-side)
-    const alleyLength = 40;  // Z direction (forward-back)
+    const alleyLength = 900;  // Z direction (forward-back)
 
     const alleyGeometry = new THREE.PlaneGeometry(alleyWidth, alleyLength);
     const alleyMaterial = new THREE.MeshStandardMaterial({
@@ -270,7 +270,7 @@ export class DiversityVisualizer {
     this.positionLabel.scale.set(1.2, 0.4, 1);
     this.positionLabel.position.set(0, 2, -2); // Initial position in the scene
     this.camera.add(this.positionLabel);
-    this.positionLabel.position.set(0, -0.3, -1.5); // In front of camera, slightly below eye level
+    this.positionLabel.position.set(-0.8, -0.8, -1.5); // In front of camera, slightly below eye level
 
     // --- Label for hovered person ---
     const hoverCanvas = document.createElement('canvas');
@@ -608,11 +608,11 @@ export class DiversityVisualizer {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = 'white';
-    ctx.font = '28px monospace';
-    ctx.fillText(`X: ${camPos.x.toFixed(2)}`, 10, 40);
-    ctx.fillText(`Y: ${camPos.y.toFixed(2)}`, 10, 70);
-    ctx.fillText(`Z: ${camPos.z.toFixed(2)}`, 10, 100);
-    ctx.fillText(`Mode: ${this.scrubStatus}`, 10, 130);
+    ctx.font = '16px monospace';
+    ctx.fillText(`X: ${camPos.x.toFixed(2)}`, 10, 20);
+    ctx.fillText(`Y: ${camPos.y.toFixed(2)}`, 10, 40);
+    ctx.fillText(`Z: ${camPos.z.toFixed(2)}`, 10, 60);
+    ctx.fillText(`Mode: ${this.scrubStatus}`, 10, 80);
     if (this.scrubStatus === 'ACTIVE') {
       ctx.fillText(`Corporate ownership: ${this.scrubProgress.toFixed(2)}`, 10, 160);
     }
