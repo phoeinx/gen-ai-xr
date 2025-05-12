@@ -55,8 +55,8 @@ export class DiversityVisualizer {
     // this.skyTopColorEnd = new THREE.Color(0xa83232);   // intense red/orange
 
     this.corridorBounds = {
-      xMin: -2,
-      xMax: 2,
+      xMin: -1,
+      xMax: 1,
       zMin: -5,
       zMax: 5  // for now, not enforced but available
     };
@@ -223,8 +223,8 @@ export class DiversityVisualizer {
 
     this.scene.add(this.alleyPlane);
 
-    const grassWidth = 30;
-    const grassLength = 30;
+    const grassWidth = 900;
+    const grassLength = 900;
 
     const grassGeometry = new THREE.PlaneGeometry(grassWidth, grassLength);
     const grassMaterial = new THREE.MeshStandardMaterial({
@@ -578,7 +578,7 @@ export class DiversityVisualizer {
       const targetZ = THREE.MathUtils.clamp(camPos.z, this.corridorBounds.zMin, this.corridorBounds.zMax);
       const currentZ = this.sliderFollower.position.z;
 
-      const damping = 0.1; // smaller = smoother/slower
+      const damping = 0.01; // smaller = smoother/slower
       const newZ = THREE.MathUtils.lerp(currentZ, targetZ, damping);
 
       this.sliderFollower.position.z = newZ;
