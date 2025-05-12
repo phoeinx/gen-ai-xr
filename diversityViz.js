@@ -869,7 +869,6 @@ createEducationMesh(level) {
       }
     }
 
-    // const toCenter = new THREE.Vector2(10, -5).sub(pos);
     const center = new THREE.Vector2(
       this.viz.config.clusterCenter.x,
       this.viz.config.clusterCenter.z
@@ -881,10 +880,15 @@ createEducationMesh(level) {
     vel.multiplyScalar(cfg.damping);
     pos.add(vel);
 
+    // Update 2D position only
     this.x = pos.x;
     this.z = pos.y;
-    this.mesh.position.set(this.x, this.getHeight() / 2, this.z);
-    this.eduMesh.position.set(this.x, this.getHeight() + 0.1, this.z);
+
+    // Do not touch vertical position here anymore!
+    this.mesh.position.x = this.x;
+    this.mesh.position.z = this.z;
+    this.eduMesh.position.x = this.x;
+    this.eduMesh.position.z = this.z;
   }
 
   update(progress) {
