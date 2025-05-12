@@ -46,6 +46,11 @@ export class DiversityVisualizer {
 
     this.config.clusterCenter = { x: 12, z: 0 }; // your chosen center
 
+    this.skyTopColorStart = new THREE.Color(0x87ceeb); // soft blue
+    // set color to dark mid gray
+    this.skyTopColorEnd = new THREE.Color(0x444444); // dark gray
+    // this.skyTopColorEnd = new THREE.Color(0xa83232);   // intense red/orange
+
     this.corridorBounds = {
       xMin: -2,
       xMax: 2,
@@ -137,7 +142,7 @@ export class DiversityVisualizer {
     this.scene.add(this.skyDome);
 
     // this.skyDome.material.uniforms.topColor.value.set(0xffe0b2);   // peach
-    this.skyDome.material.uniforms.bottomColor.value.set(0x444444); // dark ground
+    // this.skyDome.material.uniforms.bottomColor.value.set(0x444444); // dark ground
 
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(10, 10, 10);
@@ -586,6 +591,18 @@ export class DiversityVisualizer {
     const snapshot = this.getInterpolatedSnapshot(progress);
     if (!snapshot) return; // wait until data is loaded
     this.lastProgress = progress;
+
+    if (this.skyDome?.material?.uniforms?.topColor) {
+      if (this.skyTopColorStart && this.skyTopColorEnd) {
+        const skyColor = new THREE.Color();
+        skyColor.lerpColors(this.skyTopColorStart, this.skyTopColorEnd, progress);
+        this.skyDome.material.uniforms.topColor.value.copy(skyColor);
+      } else { // default to blue
+        this.skyDome.material.uniforms.topColor.value.set(0x87ceeb);
+        console.warn('Sky dome colors not set');
+      }
+    }
+
     this.currentSnapshot = snapshot;
     const totalPeople = this.people.length;
 
