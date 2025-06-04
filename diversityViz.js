@@ -6,13 +6,6 @@ import { VRButton } from './VRButton.js';
 
 export class DiversityVisualizer {
   constructor(container) {
-    this.lastUpdateTime = 0;
-    this.updateInterval = 1000; // milliseconds
-    this.lastScrubProgress = null;
-
-    this.snapshotData = [];
-    this.snapshotReady = false;
-
     this.container = container;
     this.people = [];
     this.highlighted = null;
