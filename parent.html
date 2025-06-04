@@ -103,35 +103,6 @@
   });
 
 
-  // Send progress updates to iframe
-  slider.addEventListener('input', () => {
-    const value = parseInt(slider.value, 10);
-    valueLabel.textContent = value;
-
-    iframe.contentWindow.postMessage({
-      type: 'update-progress',
-      value: value / 100
-    }, '*');
-  });
-
-  // Listen for hover data from iframe
-  window.addEventListener('message', (event) => {
-    const msg = event.data;
-    if (msg?.type === 'hover-info') {
-      if (msg.data) {
-        const { name, race, age, education, job } = msg.data;
-        infoContent.innerHTML = `
-          <strong>Name:</strong> ${name}<br>
-          <strong>Race:</strong> ${race}<br>
-          <strong>Age:</strong> ${age}<br>
-          <strong>Education:</strong> ${education}<br>
-          <strong>Job Sector:</strong> ${job ?? 'Unknown'}
-        `;
-      } else {
-        infoContent.textContent = 'Hover over a person to see details.';
-      }
-    }
-  });
 </script>
 
 </body>
