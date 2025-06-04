@@ -617,7 +617,7 @@ export class DiversityVisualizer {
       camPos.x <= this.corridorBounds.xMax
     );
 
-    // If in corrider, Z driver ownership
+    // If the camera is in the corridor, moving along the Z-axis drives corporate ownership
     const now = performance.now();
 
     if (inCorridor) {
