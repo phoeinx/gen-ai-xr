@@ -33,6 +33,8 @@
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <!-- noUiSlider JS -->
 <script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.js"></script>
+<!-- Utility functions -->
+<script src="map_utils.js"></script>
 
 <script>
 // Declare global vars
@@ -98,16 +100,6 @@ function styleFeature(feature) {
     color: 'white',
     fillOpacity: 0.7
   };
-}
-
-// 4. Get color from rate
-function getColor(rate) {
-  return rate > 0.5 ? '#67001f' :
-         rate > 0.4 ? '#b2182b' :
-         rate > 0.3 ? '#d6604d' :
-         rate > 0.2 ? '#f4a582' :
-         rate > 0.1 ? '#fddbc7' :
-                      '#f7f7f7';
 }
 
 // 5. Handle feature events
