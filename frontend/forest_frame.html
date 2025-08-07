@@ -269,6 +269,13 @@
           default:
             console.log('Unknown forest command:', command);
         }
+      } else if (event.data?.type === 'resize-viewport') {
+        // Handle viewport resize from parent (fullscreen toggle)
+        if (forestViz && forestViz.handleResize) {
+          setTimeout(() => {
+            forestViz.handleResize();
+          }, 50); // Small delay to ensure iframe has resized
+        }
       }
     });
 

@@ -445,6 +445,11 @@ export class ForestWalkVisualizer {
       this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     });
+
+    // Window resize handling
+    window.addEventListener('resize', () => {
+      this.handleResize();
+    });
   }
 
   _animate() {
@@ -560,6 +565,22 @@ export class ForestWalkVisualizer {
     this.scene.add(magicalSphere);
 
     return magicalSphere;
+  }
+
+  // Method to handle window/viewport resize
+  handleResize() {
+    if (!this.camera || !this.renderer || !this.container) {
+      return;
+    }
+
+    // Update camera aspect ratio
+    this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
+    this.camera.updateProjectionMatrix();
+
+    // Update renderer size
+    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+
+    console.log('Forest visualization resized to:', this.container.clientWidth, 'x', this.container.clientHeight);
   }
 
   // Method to spawn a flower at the player's current position
