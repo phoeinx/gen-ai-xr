@@ -1,15 +1,26 @@
 // forestWalkViz.js
 
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js';
+import * as THREE from 'three';
 import { VRButton } from './VRButton.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 export class ForestWalkVisualizer {
   constructor(container) {
+    console.log('ForestWalkVisualizer constructor called with container:', container);
     this.container = container;
     this.trees = [];
     this.flowers = [];
     this.fireflies = [];
+    this.loadedModels = []; // Track loaded GLB models
     this.mouse = new THREE.Vector2();
+    
+    // Initialize GLTF loader
+    this.gltfLoader = new GLTFLoader();
+    
+    // Object generation state
+    this.heldObject = null; // Currently held object
+    this.promptMode = false; // Whether prompt input is active
+    this.isGenerating = false; // Whether currently generating object
     
     this.config = {
       forest: {
@@ -42,13 +53,16 @@ export class ForestWalkVisualizer {
   }
 
   _initScene() {
+    console.log('_initScene called');
     this.scene = new THREE.Scene();
+    console.log('Scene created:', this.scene);
     this.camera = new THREE.PerspectiveCamera(
       75,
       this.container.clientWidth / this.container.clientHeight,
       0.1,
       1000
     );
+    console.log('Camera created:', this.camera);
 
     this.camera.rotation.order = 'YXZ';
 
@@ -64,11 +78,13 @@ export class ForestWalkVisualizer {
       alpha: false,
       powerPreference: "high-performance"
     });
+    console.log('Renderer created:', this.renderer);
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.BasicShadowMap; // use basic shadows for performance
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // limit pixel ratio
     this.container.appendChild(this.renderer.domElement);
+    console.log('Renderer canvas appended to container');
 
     // Raycaster for interactions
     this.raycaster = new THREE.Raycaster();
@@ -381,6 +397,9 @@ export class ForestWalkVisualizer {
       if (e.code === 'KeyF') {
         this._spawnFlowerAtPlayerPosition();
       }
+      if (e.code === 'KeyG') {
+        this._handleObjectGeneration();
+      }
     });
 
     document.addEventListener('keyup', (e) => {
@@ -478,6 +497,9 @@ export class ForestWalkVisualizer {
     if (Math.random() < 0.0005) { // even rarer chance
       this._playForestSound();
     }
+
+    // Update held object animation
+    this._updateHeldObject(time);
 
     this.renderer.setAnimationLoop(this._animate.bind(this));
     this.renderer.render(this.scene, this.camera);
@@ -595,5 +617,268 @@ export class ForestWalkVisualizer {
       }
     };
     animate();
+  }
+
+  // Object generation and holding system
+  _handleObjectGeneration() {
+    if (this.heldObject) {
+      // If holding an object, spawn it at current location
+      this._spawnHeldObject();
+    } else if (!this.promptMode && !this.isGenerating) {
+      // If not holding anything and not in prompt mode, show prompt
+      this._showPromptInput();
+    }
+  }
+
+  _showPromptInput() {
+    this.promptMode = true;
+    this.keyboardEnabled = false; // Disable movement while typing
+    
+    // Call parent window function directly instead of postMessage
+    if (window.showPromptInput) {
+      window.showPromptInput();
+    }
+    
+    // Prevent immediate key processing for a short time
+    setTimeout(() => {
+      // Additional cleanup if needed
+    }, 100);
+  }
+
+  async _generateObjectFromPrompt(prompt) {
+    if (this.isGenerating) return;
+    
+    this.isGenerating = true;
+    this.promptMode = false;
+    
+    try {
+      // Call backend API
+      const response = await fetch('/api/generate-model-direct', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: prompt,
+          x: this.cameraRig.position.x,
+          z: this.cameraRig.position.z
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Model generated:', data);
+
+      // Load and hold the object - prepend /api for frontend proxy
+      const fullModelUrl = '/api' + data.model_url;
+      await this._loadAndHoldObject(fullModelUrl);
+      
+    } catch (error) {
+      console.error('Error generating object:', error);
+      // Fallback: load a default object
+      await this._loadAndHoldObject('/api/models/crystal.glb'); // Fallback object
+    } finally {
+      this.isGenerating = false;
+      this.keyboardEnabled = true; // Re-enable movement
+    }
+  }
+
+  async _loadAndHoldObject(modelUrl) {
+    return new Promise((resolve, reject) => {
+      this.gltfLoader.load(
+        modelUrl,
+        (gltf) => {
+          const model = gltf.scene;
+          
+          // Auto-scale to hand-held size
+          this._scaleObjectForHolding(model);
+          
+          // Enable shadows
+          this._enableShadowsForModel(model);
+          
+          // Position in front of camera (held position)
+          this._positionObjectInHand(model);
+          
+          // Remove any previously held object
+          if (this.heldObject) {
+            // Remove from camera if attached
+            if (this.heldObject.parent === this.camera) {
+              this.camera.remove(this.heldObject);
+            } else {
+              this.scene.remove(this.heldObject);
+            }
+          }
+          
+          // Set as currently held object
+          this.heldObject = model;
+          
+          console.log('Object loaded and held:', modelUrl);
+          
+          // Show instruction to spawn
+          if (window.showMessage) {
+            window.showMessage('Press G again to spawn the object, or move around to see it in your hand!');
+          }
+          
+          resolve(model);
+        },
+        (progress) => {
+          const percentage = (progress.loaded / progress.total) * 100;
+          console.log(`Loading progress: ${percentage.toFixed(1)}%`);
+        },
+        (error) => {
+          console.error('Error loading object:', error);
+          reject(error);
+        }
+      );
+    });
+  }
+
+  _scaleObjectForHolding(model) {
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDimension = Math.max(size.x, size.y, size.z);
+    
+    // Scale to hand-held size (max 0.8 units for better hand appearance)
+    let scale = 1;
+    if (maxDimension > 0.8) {
+      scale = 0.8 / maxDimension;
+      model.scale.setScalar(scale);
+    }
+    
+    // Store original scale for animations
+    model.userData.originalScale = scale;
+  }
+
+  _positionObjectInHand(model) {
+    // Position object in front of camera, appearing to be held in hand
+    // Right hand position - slightly down and to the right
+    const handOffset = new THREE.Vector3(0.4, -0.4, -1.2);
+    
+    // Don't apply camera matrix - keep relative to camera
+    model.position.copy(handOffset);
+    
+    // Add slight initial rotation for natural holding angle
+    model.rotation.set(0.2, 0.3, 0.1);
+    
+    // Add holding animation data
+    model.userData.holdingAnimation = {
+      basePosition: handOffset.clone(),
+      baseRotation: new THREE.Euler(0.2, 0.3, 0.1),
+      time: 0,
+      bobIntensity: 0.08,
+      swayIntensity: 0.03
+    };
+    
+    // Make the object a child of the camera so it moves with the player
+    this.camera.add(model);
+  }
+
+  _spawnHeldObject() {
+    if (!this.heldObject) {
+      return;
+    }
+    
+    // Get spawn position in front of player
+    const spawnPos = this._getPlayerSpawnPosition();
+    
+    // Remove object from camera (it's currently attached to camera)
+    this.camera.remove(this.heldObject);
+    
+    // Reset object properties for world placement
+    this.heldObject.position.set(spawnPos.x, 0, spawnPos.z);
+    this.heldObject.rotation.set(0, Math.random() * Math.PI * 2, 0); // Random Y rotation only
+    
+    // Scale up to world size and reset scale animation
+    const worldScale = 2.5; // Make spawned objects larger than held objects
+    this.heldObject.scale.setScalar(this.heldObject.userData.originalScale * worldScale);
+    
+    // Remove holding-specific properties
+    delete this.heldObject.userData.holdingAnimation;
+    delete this.heldObject.userData.originalScale;
+    
+    // Add to scene and tracking
+    this.scene.add(this.heldObject);
+    this.loadedModels.push(this.heldObject);
+    
+    // Clear held object reference
+    this.heldObject = null;
+    
+    // Add spawn effect
+    this._createSpawnEffect(spawnPos.x, spawnPos.z);
+    
+    console.log('Object spawned at:', spawnPos);
+    
+    // Show success message
+    if (window.showMessage) {
+      window.showMessage('Object spawned successfully!');
+    }
+  }
+
+  _enableShadowsForModel(model) {
+    model.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        
+        if (child.material) {
+          child.material.needsUpdate = true;
+        }
+      }
+    });
+  }
+
+  // Helper method to get spawn position in front of player
+  _getPlayerSpawnPosition() {
+    const playerX = this.cameraRig.position.x;
+    const playerZ = this.cameraRig.position.z;
+    
+    // Spawn 3 units in front of player
+    const forward = new THREE.Vector3();
+    this.camera.getWorldDirection(forward);
+    forward.y = 0;
+    forward.normalize();
+    forward.multiplyScalar(3);
+    
+    return {
+      x: playerX + forward.x,
+      y: 0, // ground level
+      z: playerZ + forward.z
+    };
+  }
+
+  // Update held object animation in the animation loop
+  _updateHeldObject(time) {
+    if (this.heldObject && this.heldObject.userData.holdingAnimation) {
+      const anim = this.heldObject.userData.holdingAnimation;
+      anim.time += 0.02;
+      
+      // Enhanced hand-holding animation
+      // Walking bob - vertical movement
+      const walkingBob = Math.sin(anim.time * 3) * anim.bobIntensity;
+      
+      // Hand sway - horizontal movement
+      const handSway = Math.sin(anim.time * 2) * anim.swayIntensity;
+      
+      // Update position with natural hand movement
+      this.heldObject.position.set(
+        anim.basePosition.x + handSway,
+        anim.basePosition.y + walkingBob,
+        anim.basePosition.z
+      );
+      
+      // Gentle rotation for natural hand movement
+      this.heldObject.rotation.set(
+        anim.baseRotation.x + Math.sin(anim.time * 1.5) * 0.05,
+        anim.baseRotation.y + Math.cos(anim.time * 1.8) * 0.03,
+        anim.baseRotation.z + Math.sin(anim.time * 2.2) * 0.02
+      );
+      
+      // Add breathing effect - subtle scale animation
+      const breathingScale = 1 + Math.sin(anim.time * 1.5) * 0.02;
+      this.heldObject.scale.setScalar(this.heldObject.userData.originalScale * breathingScale);
+    }
   }
 }
