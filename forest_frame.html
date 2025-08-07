@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Forest Walk Frame</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Uncial Antiqua', cursive;
+    }
+    #forest-container {
+      width: 100%;
+      height: 100%;
+    }
+    
+    #forest-controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      color: #d4af37;
+      padding: 10px;
+      border-radius: 8px;
+      border: 2px solid #d4af37;
+      z-index: 100;
+      font-size: 12px;
+    }
+    
+    #forest-controls label {
+      display: block;
+      margin-bottom: 5px;
+      color: #d4af37;
+      font-weight: bold;
+    }
+    
+    #forest-controls input {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid #d4af37;
+      color: #d4af37;
+      padding: 2px 5px;
+      border-radius: 3px;
+      width: 60px;
+    }
+    
+    .elvish-instructions {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      color: #d4af37;
+      padding: 8px;
+      border-radius: 8px;
+      border: 2px solid #d4af37;
+      font-size: 11px;
+      max-width: 200px;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="forest-controls">
+    <label for="skyClarity">Sky Clarity:</label>
+    <input type="range" id="skyClarity" min="0" max="1" step="0.1" value="1.0" />
+  </div>
+  
+  <div class="elvish-instructions">
+    <strong>Mellon!</strong><br>
+    Use WASD to walk through the elven forest.<br>
+    Press F to spawn flowers.<br>
+    Click to lock mouse for looking around.<br>
+    Press ESC to unlock mouse.
+  </div>
+
+  <div id="forest-container"></div>
+  
+  <script type="module">
+    let forestViz;
+    import { ForestWalkVisualizer } from './forestWalkViz.js';
+
+    const container = document.getElementById('forest-container');
+    forestViz = new ForestWalkVisualizer(container);
+    
+    const skyClarity = document.getElementById('skyClarity');
+
+    // Sky clarity control
+    skyClarity.addEventListener('input', () => {
+      const clarity = parseFloat(skyClarity.value);
+      if (!isNaN(clarity)) {
+        forestViz.setSkyClarity(clarity);
+      }
+    });
+
+    // Handle messages from parent window
+    window.addEventListener('message', (event) => {
+      if (event.data?.type === 'forest-command') {
+        const { command, value } = event.data;
+        
+        switch(command) {
+          case 'setSkyClarity':
+            forestViz.setSkyClarity(value);
+            skyClarity.value = value;
+            break;
+          case 'addMagicalElement':
+            const { x, z } = value;
+            forestViz.addMagicalElement(x, z);
+            break;
+          default:
+            console.log('Unknown forest command:', command);
+        }
+      }
+    });
+
+    // Send ready message to parent
+    window.parent.postMessage({ type: 'forest-ready' }, '*');
+  </script>
+</body>
+</html>

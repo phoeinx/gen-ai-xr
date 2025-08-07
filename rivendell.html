@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rivendell - Hiking to the Last Homely House</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Cinzel+Decorative:wght@400;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      height: 100vh;
+      font-family: 'Uncial Antiqua', cursive;
+      overflow: hidden;
+      cursor: none;
+      background: url('assets/rivendell.jpg') no-repeat center center fixed;
+      background-size: cover;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.3);
+      z-index: 1;
+    }
+
+    .elvish-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #d4af37;
+      font-size: 2.5rem;
+      font-weight: 600;
+      text-align: center;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+      z-index: 2;
+      opacity: 1;
+      transition: opacity 0.5s ease;
+      letter-spacing: 3px;
+    }
+
+    .elvish-subtitle {
+      font-size: 1.2rem;
+      margin-top: 20px;
+      color: #f0f0f0;
+      font-style: italic;
+    }
+
+    .elrond-container {
+      position: absolute;
+      right: 5%;
+      top: 20%;
+      width: 300px;
+      height: 400px;
+      opacity: 0;
+      transform: translateX(100px);
+      transition: all 1s ease;
+      z-index: 3;
+    }
+
+    .elrond-container.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .elrond-figure {
+      width: 100%;
+      height: 100%;
+      background: url('assets/elrond.png') no-repeat center center;
+      background-size: cover;
+      border-radius: 50px;
+      border: 3px solid #d4af37;
+      box-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+      position: relative;
+    }
+
+    .speech-bubble {
+      position: absolute;
+      top: -80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.95);
+      color: #2c5f2d;
+      padding: 15px 20px;
+      border-radius: 20px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      white-space: nowrap;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      opacity: 0;
+      animation: fadeInSpeech 1s ease 0.5s forwards;
+    }
+
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-top: 10px solid rgba(255, 255, 255, 0.95);
+    }
+
+    .iframe-container {
+      position: absolute;
+      left: 5%;
+      top: 20%;
+      width: 60%;
+      height: 60%;
+      opacity: 0;
+      transform: translateY(50px);
+      transition: all 1s ease 0.5s;
+      z-index: 3;
+    }
+
+    .iframe-container.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .iframe-frame {
+      width: 100%;
+      height: 100%;
+      border: 3px solid #d4af37;
+      border-radius: 15px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .iframe-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #d4af37;
+      font-size: 1.5rem;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .custom-cursor {
+      position: fixed;
+      width: 20px;
+      height: 20px;
+      background: radial-gradient(circle, #d4af37, transparent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transition: transform 0.1s ease;
+      box-shadow: 0 0 15px #d4af37;
+    }
+
+    .started .elvish-text {
+      opacity: 0;
+    }
+
+    @keyframes fadeInSpeech {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .elvish-text {
+        font-size: 1.8rem;
+      }
+      
+      .elrond-container {
+        width: 200px;
+        height: 300px;
+        right: 2%;
+      }
+      
+      .iframe-container {
+        width: 90%;
+        height: 50%;
+        left: 5%;
+        top: 45%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="custom-cursor" id="customCursor"></div>
+  
+  <div class="elvish-text" id="elvishText">
+    <div>Mae govannen, mellon nin</div>
+    <div class="elvish-subtitle">Move your cursor to start exploring</div>
+  </div>
+
+  <div class="elrond-container" id="elrondContainer">
+    <div class="elrond-figure">
+      <div class="speech-bubble">Welcome, friend</div>
+    </div>
+  </div>
+
+  <div class="iframe-container" id="iframeContainer">
+    <div class="iframe-frame">
+      <div class="iframe-placeholder">
+        ✦ Your content will appear here ✦
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let hasStarted = false;
+    const customCursor = document.getElementById('customCursor');
+    const elvishText = document.getElementById('elvishText');
+    const elrondContainer = document.getElementById('elrondContainer');
+    const iframeContainer = document.getElementById('iframeContainer');
+
+    // Custom cursor following mouse
+    document.addEventListener('mousemove', (e) => {
+      customCursor.style.left = e.clientX + 'px';
+      customCursor.style.top = e.clientY + 'px';
+      
+      // Start the experience on first mouse movement
+      if (!hasStarted) {
+        startExperience();
+        hasStarted = true;
+      }
+    });
+
+    function startExperience() {
+      document.body.classList.add('started');
+      
+      // Show Elrond after a short delay
+      setTimeout(() => {
+        elrondContainer.classList.add('visible');
+      }, 500);
+      
+      // Show iframe container with forest visualization
+      setTimeout(() => {
+        iframeContainer.classList.add('visible');
+        loadContent('forest_frame.html');
+      }, 1000);
+    }
+
+    // Hide custom cursor when mouse leaves window
+    document.addEventListener('mouseleave', () => {
+      customCursor.style.opacity = '0';
+    });
+
+    document.addEventListener('mouseenter', () => {
+      customCursor.style.opacity = '1';
+    });
+
+    // Function to load content into the iframe area
+    function loadContent(url) {
+      const placeholder = document.querySelector('.iframe-placeholder');
+      if (placeholder) {
+        placeholder.innerHTML = `<iframe src="${url}" style="width: 100%; height: 100%; border: none; border-radius: 12px;"></iframe>`;
+      }
+    }
+
+    // Listen for messages from the forest iframe
+    window.addEventListener('message', (event) => {
+      const msg = event.data;
+      if (msg?.type === 'forest-ready') {
+        console.log('Forest visualization loaded successfully');
+        // Could add some visual feedback here if desired
+      }
+    });
+
+    // Expose function globally for external use
+    window.rivendellLoadContent = loadContent;
+    
+    // Expose function to send commands to forest
+    window.sendForestCommand = function(command, value) {
+      const iframe = document.querySelector('iframe');
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({
+          type: 'forest-command',
+          command: command,
+          value: value
+        }, '*');
+      }
+    };
+  </script>
+</body>
+</html>
