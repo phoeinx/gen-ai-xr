@@ -143,17 +143,16 @@
   </style>
 </head>
 <body>
-  <div class="header">Forest Walk WebXR</div>
+  <div class="header">Gen-AI + AR</div>
   <div class="description">
-    Explore an immersive 3D forest environment using WebXR technology. Walk through procedurally generated trees and
-    flowers, interact with AI-generated objects, and experience the magic of virtual reality in your browser. Use WASD
-    keys to move, click to look around, and press G to generate custom objects with AI.
+    Explore an immersive augmented reality experience that allows natural design of everyday objects.
+    The objects you create through prompting generative AI will appear in your physical environment.
   </div>
   <div class="iframe-container" id="iframeContainer">
     <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
     <div class="iframe-frame">
       <div class="iframe-placeholder" id="iframePlaceholder">
-        Loading Forest Visualization...
+        Loading Visualization...
       </div>
     </div>
   </div>
@@ -211,7 +210,7 @@
     });
 
     // Expose function globally for external use
-    window.rivendellLoadContent = loadContent;
+    window.loadContent = loadContent;
     
     // Expose function to send commands to forest
     window.sendForestCommand = function(command, value) {

@@ -86,6 +86,9 @@ export class ForestWalkVisualizer {
     // Forest floor
     this._createForestFloor();
 
+    // Load and place the desk at center stage
+    this._loadCenterDesk();
+
     // Lighting setup
     this._setupLighting();
 
@@ -143,6 +146,105 @@ export class ForestWalkVisualizer {
     this.forestFloor.rotation.x = -Math.PI / 2;
     this.forestFloor.receiveShadow = true;
     this.scene.add(this.forestFloor);
+  }
+
+  _loadCenterDesk() {
+    // Load the desk GLB model and place it at center stage
+    this.gltfLoader.load(
+      './assets/models/desk.glb',
+      (gltf) => {
+        const deskModel = gltf.scene.clone();
+        
+        // Position the desk in front of the user from working perspective
+        deskModel.position.set(0, 0, -2); // 2 units in front for better working distance
+        
+        // Rotate the desk 180 degrees so user approaches from the working side
+        deskModel.rotation.y = Math.PI;
+        
+        // Scale the desk appropriately (adjust as needed)
+        deskModel.scale.setScalar(1.0);
+        
+        // Ensure the desk sits properly on the ground
+        // Get the bounding box to calculate the proper Y position
+        const box = new THREE.Box3().setFromObject(deskModel);
+        const yOffset = -box.min.y; // Lift the desk so its bottom touches the ground
+        deskModel.position.y = yOffset;
+        
+        // Enable shadows and interaction
+        deskModel.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            
+            // Make the desk interactable by adding userData
+            child.userData.isInteractable = true;
+            child.userData.objectType = 'desk';
+          }
+        });
+        
+        // Store reference for interactions
+        this.centerDesk = deskModel;
+        
+        // Add to scene and loaded models array
+        this.loadedModels.push(deskModel);
+        this.scene.add(deskModel);
+        
+        console.log('Desk loaded and positioned at center stage');
+      },
+      (progress) => {
+        // Loading progress (optional)
+        console.log('Loading desk model:', (progress.loaded / progress.total * 100) + '%');
+      },
+      (error) => {
+        console.error('Error loading desk model:', error);
+        // Fallback: create a simple geometric desk if GLB fails
+        this._createFallbackDesk();
+      }
+    );
+  }
+
+  _createFallbackDesk() {
+    // Create a simple geometric desk as fallback
+    const deskGroup = new THREE.Group();
+    
+    // Desk top
+    const topGeometry = new THREE.BoxGeometry(4, 0.1, 2);
+    const woodMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+    const deskTop = new THREE.Mesh(topGeometry, woodMaterial);
+    deskTop.position.y = 1.5;
+    deskTop.castShadow = true;
+    deskTop.receiveShadow = true;
+    deskGroup.add(deskTop);
+    
+    // Desk legs
+    const legGeometry = new THREE.BoxGeometry(0.1, 1.5, 0.1);
+    const legPositions = [
+      [-1.8, 0.75, -0.8],
+      [1.8, 0.75, -0.8],
+      [-1.8, 0.75, 0.8],
+      [1.8, 0.75, 0.8]
+    ];
+    
+    legPositions.forEach(pos => {
+      const leg = new THREE.Mesh(legGeometry, woodMaterial);
+      leg.position.set(...pos);
+      leg.castShadow = true;
+      leg.receiveShadow = true;
+      leg.userData.isInteractable = true;
+      leg.userData.objectType = 'desk';
+      deskGroup.add(leg);
+    });
+    
+    // Position the fallback desk in front of user from working side
+    deskGroup.position.set(0, 0, -2);
+    deskGroup.rotation.y = Math.PI; // Rotate 180 degrees for working perspective
+    
+    // Store reference and add to scene
+    this.centerDesk = deskGroup;
+    this.loadedModels.push(deskGroup);
+    this.scene.add(deskGroup);
+    
+    console.log('Fallback desk created at center stage');
   }
 
   _setupLighting() {
