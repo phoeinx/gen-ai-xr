@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Forest Walk WebXR</title>
+  <title>Gen-AI + AR</title>
   <style>
     * {
       margin: 0;
@@ -162,7 +162,7 @@
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     let isFullscreen = false;
 
-    // Load the forest visualization immediately
+    // Load the visualization immediately
     function loadContent(url) {
       const placeholder = document.getElementById('iframePlaceholder');
       if (placeholder) {
@@ -201,32 +201,32 @@
       }
     });
 
-    // Listen for messages from the forest iframe
+    // Listen for messages from the visualization iframe
     window.addEventListener('message', (event) => {
       const msg = event.data;
-      if (msg?.type === 'forest-ready') {
-        console.log('Forest visualization loaded successfully');
+      if (msg?.type === 'vis-ready') {
+        console.log('Visualization loaded successfully');
       }
     });
 
     // Expose function globally for external use
     window.loadContent = loadContent;
     
-    // Expose function to send commands to forest
-    window.sendForestCommand = function(command, value) {
+    // Expose function to send commands to visualization
+    window.sendVisCommand = function(command, value) {
       const iframe = document.querySelector('iframe');
       if (iframe && iframe.contentWindow) {
         iframe.contentWindow.postMessage({
-          type: 'forest-command',
+          type: 'vis-command',
           command: command,
           value: value
         }, '*');
       }
     };
 
-    // Auto-load the forest visualization on page load
+    // Auto-load the visualization on page load
     document.addEventListener('DOMContentLoaded', () => {
-      loadContent('forest_frame.html');
+      loadContent('vis_frame.html');
     });
   </script>
 </body>

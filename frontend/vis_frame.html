@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Forest Walk</title>
+  <title>Visualization</title>
   
   <!-- Import map for Three.js -->
   <script type="importmap">
@@ -22,12 +22,12 @@
       overflow: hidden;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    #forest-container {
+    #vis-container {
       width: 100%;
       height: 100%;
     }
     
-    #forest-controls {
+    #vis-controls {
       position: absolute;
       top: 10px;
       left: 10px;
@@ -41,14 +41,14 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
     
-    #forest-controls label {
+    #vis-controls label {
       display: block;
       margin-bottom: 5px;
       color: #555555;
       font-weight: 500;
     }
     
-    #forest-controls input {
+    #vis-controls input {
       background: #ffffff;
       border: 1px solid #cccccc;
       color: #666666;
@@ -149,14 +149,14 @@
   </style>
 </head>
 <body>
-  <div id="forest-controls">
+  <div id="vis-controls">
     <label for="skyClarity">Sky Clarity:</label>
     <input type="range" id="skyClarity" min="0" max="1" step="0.1" value="1.0" />
   </div>
   
   <div class="instructions">
     <strong>Instructions:</strong><br>
-    Use WASD to walk through the forest.<br>
+    Use WASD to walk through the environment.<br>
     Press F to spawn flowers.<br>
     Press G to generate objects with AI.<br>
     Click to lock mouse for looking around.<br>
@@ -179,11 +179,11 @@
 
   <div class="message-display" id="messageDisplay"></div>
 
-  <div id="forest-container"></div>
+  <div id="vis-container"></div>
   
   <script>
     // Global functions for prompt system
-    let forestViz;
+    let vizualizer;
     
     function showPromptInput() {
       const overlay = document.getElementById('promptOverlay');
@@ -209,9 +209,9 @@
       const prompt = input.value.trim();
       
       if (prompt) {
-        // Send prompt directly to the forest visualization (no iframe here)
-        if (forestViz && forestViz._generateObjectFromPrompt) {
-          forestViz._generateObjectFromPrompt(prompt);
+        // Send prompt directly to the visualization (no iframe here)
+        if (vizualizer && vizualizer._generateObjectFromPrompt) {
+          vizualizer._generateObjectFromPrompt(prompt);
         }
       }
       
@@ -239,8 +239,8 @@
   <script type="module">
     import { ForestWalkVisualizer } from './forestWalkViz.js';
 
-    const container = document.getElementById('forest-container');
-    forestViz = new ForestWalkVisualizer(container);
+    const container = document.getElementById('vis-container');
+    vizualizer = new ForestWalkVisualizer(container);
     
     const skyClarity = document.getElementById('skyClarity');
 
@@ -248,32 +248,32 @@
     skyClarity.addEventListener('input', () => {
       const clarity = parseFloat(skyClarity.value);
       if (!isNaN(clarity)) {
-        forestViz.setSkyClarity(clarity);
+        vizualizer.setSkyClarity(clarity);
       }
     });
 
     // Handle messages from parent window
     window.addEventListener('message', (event) => {
-      if (event.data?.type === 'forest-command') {
+      if (event.data?.type === 'vis-command') {
         const { command, value } = event.data;
         
         switch(command) {
           case 'setSkyClarity':
-            forestViz.setSkyClarity(value);
+            vizualizer.setSkyClarity(value);
             skyClarity.value = value;
             break;
           case 'addMagicalElement':
             const { x, z } = value;
-            forestViz.addMagicalElement(x, z);
+            vizualizer.addMagicalElement(x, z);
             break;
           default:
-            console.log('Unknown forest command:', command);
+            console.log('Unknown vis command:', command);
         }
       } else if (event.data?.type === 'resize-viewport') {
         // Handle viewport resize from parent (fullscreen toggle)
-        if (forestViz && forestViz.handleResize) {
+        if (vizualizer && vizualizer.handleResize) {
           setTimeout(() => {
-            forestViz.handleResize();
+            vizualizer.handleResize();
           }, 50); // Small delay to ensure iframe has resized
         }
       }
@@ -313,7 +313,7 @@
     });
 
     // Send ready message to parent
-    window.parent.postMessage({ type: 'forest-ready' }, '*');
+    window.parent.postMessage({ type: 'vis-ready' }, '*');
   </script>
 </body>
 </html>
