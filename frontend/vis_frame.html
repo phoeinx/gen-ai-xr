@@ -237,10 +237,10 @@
   </script>
   
   <script type="module">
-    import { ForestWalkVisualizer } from './forestWalkViz.js';
+          import { XRVisualizer } from './XRViz.js';
 
     const container = document.getElementById('vis-container');
-    vizualizer = new ForestWalkVisualizer(container);
+      vizualizer = new XRVisualizer(container);
     
     const skyClarity = document.getElementById('skyClarity');
 
@@ -279,7 +279,7 @@
       }
     });
 
-    // Listen for messages from forest visualization
+      // Listen for messages from visualization
     window.addEventListener('message', (event) => {
       const msg = event.data;
       
