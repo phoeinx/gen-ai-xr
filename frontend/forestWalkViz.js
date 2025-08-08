@@ -8,9 +8,6 @@ export class ForestWalkVisualizer {
   constructor(container) {
     console.log('ForestWalkVisualizer constructor called with container:', container);
     this.container = container;
-    this.trees = [];
-    this.flowers = [];
-    this.fireflies = [];
     this.loadedModels = []; // Track loaded GLB models
     this.mouse = new THREE.Vector2();
     
@@ -23,16 +20,11 @@ export class ForestWalkVisualizer {
     this.isGenerating = false; // Whether currently generating object
     
     this.config = {
-      forest: {
-        size: 150, // reduced forest size for better performance
-        treeCount: 80, // reduced tree count for performance
-        flowerCount: 50, // reduced flower count
-        fireflyCount: 15 // reduced firefly count for performance
+      environment: {
+        size: 150, // environment size
       },
       colors: {
-        treeColors: [0x2d5016, 0x1a3009, 0x3d6b1a, 0x4a7c23],
-        trunkColors: [0x8b4513, 0x654321, 0x5d4037, 0x6d4c41],
-        flowerColors: [0xff69b4, 0xffd700, 0x9370db, 0x00ced1, 0xff1493]
+        flowerColors: [0xff69b4, 0xffd700, 0x9370db, 0x00ced1, 0xff1493] // Keep for spawning flowers
       }
     };
 
@@ -43,7 +35,6 @@ export class ForestWalkVisualizer {
     this.inVR = false;
 
     this._initScene();
-    this._createForest();
     this._addEventListeners();
     this._animate();
 
@@ -130,8 +121,8 @@ export class ForestWalkVisualizer {
 
   _createForestFloor() {
     const floorGeometry = new THREE.PlaneGeometry(
-      this.config.forest.size * 2,
-      this.config.forest.size * 2,
+      this.config.environment.size * 2,
+      this.config.environment.size * 2,
       32, // reduced segments for performance
       32
     );
@@ -180,200 +171,6 @@ export class ForestWalkVisualizer {
 
     // No fog for clear visibility
     // this.scene.fog = removed for clear sky
-  }
-
-  _createForest() {
-    this._createTrees();
-    this._createFlowers();
-    this._createFireflies();
-  }
-
-  _createTrees() {
-    const { treeCount, size } = this.config.forest;
-    const { treeColors, trunkColors } = this.config.colors;
-
-    for (let i = 0; i < treeCount; i++) {
-      const x = (Math.random() - 0.5) * size * 2;
-      const z = (Math.random() - 0.5) * size * 2;
-      
-      // Skip area around spawn point
-      if (Math.sqrt(x * x + z * z) < 5) {
-        continue;
-      }
-
-      const tree = this._createSingleTree(x, z, treeColors, trunkColors);
-      this.trees.push(tree);
-      this.scene.add(tree);
-    }
-  }
-
-  _createSingleTree(x, z, treeColors, trunkColors) {
-    const treeGroup = new THREE.Group();
-
-    // Trunk - bigger and more realistic
-    const trunkHeight = THREE.MathUtils.randFloat(15, 25); // much taller
-    const trunkRadius = THREE.MathUtils.randFloat(0.8, 1.5); // thicker
-    const trunkGeometry = new THREE.CylinderGeometry(
-      trunkRadius * 0.8, 
-      trunkRadius * 1.3, 
-      trunkHeight, 
-      12, // more segments for rounder trunk
-      3 // height segments for texture
-    );
-    
-    // Add bark texture variation
-    const trunkMaterial = new THREE.MeshLambertMaterial({ // Lambert for performance
-      color: trunkColors[Math.floor(Math.random() * trunkColors.length)],
-    });
-    
-    const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-    trunk.position.y = trunkHeight / 2;
-    trunk.castShadow = true;
-    trunk.receiveShadow = true;
-    treeGroup.add(trunk);
-
-    // Canopy - bigger and more realistic with multiple layers
-    const canopyLayers = Math.floor(Math.random() * 2) + 3; // 3-4 layers
-    for (let layer = 0; layer < canopyLayers; layer++) {
-      const layerProgress = layer / (canopyLayers - 1);
-      const canopyRadius = THREE.MathUtils.randFloat(8, 15) * (1 - layerProgress * 0.4); // much larger
-      const canopyHeight = THREE.MathUtils.randFloat(4, 8) * (1 - layerProgress * 0.3); // taller canopy
-      
-      // Use lower detail for performance but still look good
-      const canopyGeometry = new THREE.ConeGeometry(canopyRadius, canopyHeight, 12, 2); 
-      const canopyMaterial = new THREE.MeshLambertMaterial({ // Lambert for performance
-        color: treeColors[Math.floor(Math.random() * treeColors.length)],
-      });
-      
-      const canopy = new THREE.Mesh(canopyGeometry, canopyMaterial);
-      canopy.position.y = trunkHeight + layer * (canopyHeight * 0.4) - canopyHeight * 0.2;
-      canopy.castShadow = true;
-      canopy.receiveShadow = true;
-      
-      // Add slight random offset for more natural look
-      canopy.position.x += (Math.random() - 0.5) * 2;
-      canopy.position.z += (Math.random() - 0.5) * 2;
-      
-      treeGroup.add(canopy);
-    }
-
-    // Add some branch details for realism
-    const branchCount = Math.floor(Math.random() * 3) + 2;
-    for (let i = 0; i < branchCount; i++) {
-      const branchLength = THREE.MathUtils.randFloat(3, 6);
-      const branchThickness = 0.1;
-      const branchGeometry = new THREE.CylinderGeometry(branchThickness, branchThickness * 0.5, branchLength, 6);
-      const branchMaterial = new THREE.MeshLambertMaterial({
-        color: trunkColors[Math.floor(Math.random() * trunkColors.length)]
-      });
-      
-      const branch = new THREE.Mesh(branchGeometry, branchMaterial);
-      const branchHeight = trunkHeight * 0.6 + Math.random() * trunkHeight * 0.3;
-      const angle = (i / branchCount) * Math.PI * 2 + Math.random() * 0.5;
-      
-      branch.position.set(
-        Math.cos(angle) * trunkRadius * 1.2,
-        branchHeight,
-        Math.sin(angle) * trunkRadius * 1.2
-      );
-      branch.rotation.z = Math.cos(angle) * 0.3;
-      branch.rotation.x = Math.sin(angle) * 0.3;
-      
-      treeGroup.add(branch);
-    }
-
-    treeGroup.position.set(x, 0, z);
-    
-    // Add slight random rotation
-    treeGroup.rotation.y = Math.random() * Math.PI * 2;
-    
-    return treeGroup;
-  }
-
-  _createFlowers() {
-    const { flowerCount, size } = this.config.forest;
-    const { flowerColors } = this.config.colors;
-
-    for (let i = 0; i < flowerCount; i++) {
-      const x = (Math.random() - 0.5) * size * 2;
-      const z = (Math.random() - 0.5) * size * 2;
-
-      const flower = this._createSingleFlower(x, z, flowerColors);
-      this.flowers.push(flower);
-      this.scene.add(flower);
-    }
-  }
-
-  _createSingleFlower(x, z, flowerColors) {
-    const flowerGroup = new THREE.Group();
-
-    // Stem - simplified
-    const stemHeight = THREE.MathUtils.randFloat(0.5, 1.2);
-    const stemGeometry = new THREE.CylinderGeometry(0.02, 0.02, stemHeight, 4);
-    const stemMaterial = new THREE.MeshLambertMaterial({ color: 0x228b22 }); // Lambert for performance
-    const stem = new THREE.Mesh(stemGeometry, stemMaterial);
-    stem.position.y = stemHeight / 2;
-    flowerGroup.add(stem);
-
-    // Single flower head instead of multiple petals for performance
-    const flowerGeometry = new THREE.SphereGeometry(0.15, 6, 4); // lower detail
-    const petalColor = flowerColors[Math.floor(Math.random() * flowerColors.length)];
-    const flowerMaterial = new THREE.MeshLambertMaterial({
-      color: petalColor,
-      emissive: petalColor,
-      emissiveIntensity: 0.1 // reduced glow for performance
-    });
-    const flowerHead = new THREE.Mesh(flowerGeometry, flowerMaterial);
-    flowerHead.position.y = stemHeight;
-    flowerGroup.add(flowerHead);
-
-    flowerGroup.position.set(x, 0, z);
-    return flowerGroup;
-  }
-
-  _createFireflies() {
-    const { fireflyCount, size } = this.config.forest;
-
-    for (let i = 0; i < fireflyCount; i++) {
-      const firefly = this._createSingleFirefly(size);
-      this.fireflies.push(firefly);
-      this.scene.add(firefly);
-    }
-  }
-
-  _createSingleFirefly(size) {
-    const fireflyGroup = new THREE.Group();
-
-    // Simplified glowing sphere - more like morning dew drops
-    const glowGeometry = new THREE.SphereGeometry(0.06, 6, 4); // smaller
-    const glowMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffeb3b, // warm yellow for morning
-      transparent: true,
-      opacity: 0.6 // more subtle in morning light
-    });
-    const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-    fireflyGroup.add(glow);
-
-    // Smaller point light for morning fireflies (they're less bright in daylight)
-    const light = new THREE.PointLight(0xffeb3b, 0.15, 2); // dimmer yellowish light
-    fireflyGroup.add(light);
-
-    // Random starting position
-    fireflyGroup.position.set(
-      (Math.random() - 0.5) * size * 1.5, // reduced range
-      Math.random() * 6 + 2, // lower height
-      (Math.random() - 0.5) * size * 1.5
-    );
-
-    // Animation properties
-    fireflyGroup.userData = {
-      originalPosition: fireflyGroup.position.clone(),
-      phase: Math.random() * Math.PI * 2,
-      speed: THREE.MathUtils.randFloat(0.3, 1.0), // slower for performance
-      amplitude: THREE.MathUtils.randFloat(1, 4) // smaller range
-    };
-
-    return fireflyGroup;
   }
 
   _addEventListeners() {
@@ -472,63 +269,11 @@ export class ForestWalkVisualizer {
 
     this.cameraRig.position.add(moveVector);
 
-    // Animate fireflies - reduced frequency for performance
-    if (Math.floor(time * 10) % 2 === 0) { // animate every other frame
-      this.fireflies.forEach(firefly => {
-        const { originalPosition, phase, speed, amplitude } = firefly.userData;
-        const currentPhase = phase + time * speed;
-        
-        firefly.position.x = originalPosition.x + Math.sin(currentPhase) * amplitude;
-        firefly.position.y = originalPosition.y + Math.sin(currentPhase * 1.2) * 1.5;
-        firefly.position.z = originalPosition.z + Math.cos(currentPhase * 0.7) * amplitude;
-
-        // Simplified morning light flicker
-        const light = firefly.children.find(child => child.isPointLight);
-        if (light) {
-          light.intensity = 0.1 + Math.sin(currentPhase * 3) * 0.05; // very subtle morning glow
-        }
-      });
-    }
-
-    // Simplified wind effect on flowers - less frequent updates
-    if (Math.floor(time * 5) % 3 === 0) { // update every third frame
-      this.flowers.forEach((flower, index) => {
-        const windPhase = time * 1.5 + index * 0.3;
-        flower.rotation.z = Math.sin(windPhase) * 0.05; // reduced movement
-      });
-    }
-
-    // Less frequent ambient sounds
-    if (Math.random() < 0.0005) { // even rarer chance
-      this._playForestSound();
-    }
-
     // Update held object animation
     this._updateHeldObject(time);
 
     this.renderer.setAnimationLoop(this._animate.bind(this));
     this.renderer.render(this.scene, this.camera);
-  }
-
-  _playForestSound() {
-    const ctx = this.audioCtx;
-    const now = ctx.currentTime;
-
-    // Create a gentle nature sound
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(THREE.MathUtils.randFloat(200, 400), now);
-
-    gainNode.gain.setValueAtTime(0.05, now);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 2);
-
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
-
-    oscillator.start(now);
-    oscillator.stop(now + 2);
   }
 
   // Method to adjust sky clarity (can be called externally)
@@ -599,13 +344,70 @@ export class ForestWalkVisualizer {
     const spawnX = playerX + forward.x;
     const spawnZ = playerZ + forward.z;
     
-    // Create and add the flower
-    const flower = this._createSingleFlower(spawnX, spawnZ, this.config.colors.flowerColors);
-    this.flowers.push(flower);
-    this.scene.add(flower);
+    // Load and spawn the flower GLB model
+    this.gltfLoader.load(
+      './assets/models/flower.glb',
+      (gltf) => {
+        const flowerModel = gltf.scene.clone();
+        
+        // Position the flower
+        flowerModel.position.set(spawnX, 0, spawnZ);
+        
+        // Scale the flower appropriately
+        flowerModel.scale.setScalar(0.5);
+        
+        // Add random rotation for variety
+        flowerModel.rotation.y = Math.random() * Math.PI * 2;
+        
+        // Enable shadows if needed
+        flowerModel.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        
+        // Add to scene and flowers array
+        this.loadedModels.push(flowerModel);
+        this.scene.add(flowerModel);
+        
+        // Optional: Add a subtle spawn effect
+        this._createSpawnEffect(spawnX, spawnZ);
+      },
+      (progress) => {
+        // Loading progress (optional)
+        console.log('Loading flower model:', (progress.loaded / progress.total * 100) + '%');
+      },
+      (error) => {
+        console.error('Error loading flower model:', error);
+        // Fallback: create a simple geometric flower if GLB fails
+        this._createFallbackFlower(spawnX, spawnZ);
+      }
+    );
+  }
+
+  // Fallback method to create a simple geometric flower if GLB loading fails
+  _createFallbackFlower(x, z) {
+    const flowerGroup = new THREE.Group();
+
+    // Simple stem
+    const stemGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.8, 8);
+    const stemMaterial = new THREE.MeshLambertMaterial({ color: 0x228b22 });
+    const stem = new THREE.Mesh(stemGeometry, stemMaterial);
+    stem.position.y = 0.4;
+    flowerGroup.add(stem);
+
+    // Simple flower head
+    const flowerGeometry = new THREE.SphereGeometry(0.15, 8, 6);
+    const flowerMaterial = new THREE.MeshLambertMaterial({ color: 0xff69b4 });
+    const flowerHead = new THREE.Mesh(flowerGeometry, flowerMaterial);
+    flowerHead.position.y = 0.8;
+    flowerGroup.add(flowerHead);
+
+    flowerGroup.position.set(x, 0, z);
     
-    // Optional: Add a subtle spawn effect
-    this._createSpawnEffect(spawnX, spawnZ);
+    this.loadedModels.push(flowerGroup);
+    this.scene.add(flowerGroup);
   }
 
   // Optional spawn effect for visual feedback
@@ -667,7 +469,9 @@ export class ForestWalkVisualizer {
   }
 
   async _generateObjectFromPrompt(prompt) {
-    if (this.isGenerating) return;
+    if (this.isGenerating) {
+      return;
+    }
     
     this.isGenerating = true;
     this.promptMode = false;
