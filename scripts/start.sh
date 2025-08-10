@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Development startup script for Rivendell WebXR
+# Development startup script for Gen-AI XR
 
-echo "🧝‍♂️ Starting Rivendell WebXR Development Environment..."
+echo "� Starting Gen-AI XR Development Environment..."
 
 # Check if Docker is running
 if ! docker info > /dev/null 2>&1; then
@@ -16,7 +16,7 @@ docker-compose up --build -d
 
 # Wait for services to be ready
 echo "⏳ Waiting for services to start..."
-sleep 5
+sleep 10
 
 # Check if services are healthy
 echo "🔍 Checking service health..."
@@ -36,10 +36,19 @@ else
     echo "❌ Backend is not responding"
 fi
 
+# Check whisper service
+echo "🎤 Checking Whisper voice server..."
+if nc -z localhost 9000; then
+    echo "✅ Whisper server is running at ws://localhost:9000"
+else
+    echo "❌ Whisper server is not responding"
+fi
+
 echo ""
-echo "🚀 Rivendell WebXR is ready!"
+echo "🚀 Gen-AI XR is ready!"
 echo "   Frontend: http://localhost:3000"
 echo "   Backend:  http://localhost:8000"
+echo "   Whisper:  ws://localhost:9000"
 echo "   API Docs: http://localhost:8000/docs"
 echo ""
 echo "📝 To stop: ./scripts/stop.sh"

@@ -11,8 +11,10 @@ services:
       - ./frontend:/usr/share/nginx/html:ro
     depends_on:
       - backend
+      - whisper
     environment:
       - BACKEND_URL=http://backend:8000
+      - WHISPER_URL=ws://whisper:9000
     networks:
       - rivendell-network
 
@@ -28,6 +30,22 @@ services:
     environment:
       - PYTHONPATH=/app
       - ENVIRONMENT=development
+    networks:
+      - rivendell-network
+
+  whisper:
+    build:
+      context: ./whisper
+      dockerfile: Dockerfile
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./whisper:/app
+    environment:
+      - WHISPER_MODEL=base
+      - WHISPER_DEVICE=auto
+      - WHISPER_HOST=0.0.0.0
+      - WHISPER_PORT=9000
     networks:
       - rivendell-network
 

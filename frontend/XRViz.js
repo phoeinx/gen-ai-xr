@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { VRButton } from './VRButton.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { WhisperClient } from './WhisperClient.js';
 
 export class XRVisualizer {
   constructor(container) {
@@ -34,8 +35,14 @@ export class XRVisualizer {
     this.pointerLocked = false;
     this.inVR = false;
 
+    // Voice control setup
+    this.whisperClient = null;
+    this.voiceEnabled = false;
+    this.isListening = false;
+
     this._initScene();
     this._addEventListeners();
+    this._initVoiceControl();
     this._animate();
 
     // Enable WebXR
@@ -105,6 +112,176 @@ export class XRVisualizer {
 
     // Audio context for ambient sounds
     this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+
+  async _initVoiceControl() {
+    try {
+      // Initialize Whisper client
+      const whisperUrl = window.location.protocol === 'https:' ? 
+        'wss://localhost:9000' : 'ws://localhost:9000';
+      
+      this.whisperClient = new WhisperClient(whisperUrl);
+      
+      // Set up event handlers
+      this.whisperClient.onTranscription = (result) => {
+        this._handleVoiceCommand(result.text);
+      };
+      
+      this.whisperClient.onError = (error) => {
+        console.error('Voice control error:', error);
+        if (window.showMessage) {
+          window.showMessage(`Voice error: ${error}`);
+        }
+      };
+      
+      this.whisperClient.onConnectionChange = (connected) => {
+        this.voiceEnabled = connected;
+        console.log(`Voice control ${connected ? 'enabled' : 'disabled'}`);
+        if (window.showMessage) {
+          window.showMessage(`Voice control ${connected ? 'enabled' : 'disabled'}`);
+        }
+      };
+      
+      // Try to connect
+      await this.whisperClient.connect();
+      
+    } catch (error) {
+      console.warn('Voice control not available:', error);
+      this.voiceEnabled = false;
+    }
+  }
+
+  _handleVoiceCommand(text) {
+    const command = text.toLowerCase().trim();
+    console.log('Voice command received:', command);
+    
+    // Enable keyboard for potential prompt mode
+    this.keyboardEnabled = true;
+    
+    // Check for object keywords first
+    const objectModel = this._matchObjectKeyword(command);
+    if (objectModel) {
+      // Use backend models path for most models, frontend assets for desk/flower
+      let modelPath;
+      if (objectModel === 'desk' || objectModel === 'flower') {
+        modelPath = `./assets/models/${objectModel}.glb`;
+      } else {
+        modelPath = `/api/models/${objectModel}.glb`; // Backend models via API proxy
+      }
+      
+      this._loadAndHoldObject(modelPath);
+      if (window.showMessage) {
+        window.showMessage(`✅ Loading ${objectModel}...`);
+      }
+      return;
+    }
+    
+    // Command patterns for specific actions
+    if (command.includes('spawn') && command.includes('flower')) {
+      this._spawnFlowerAtPlayerPosition();
+      if (window.showMessage) {
+        window.showMessage('Spawning flower via voice command');
+      }
+    }
+    else if (command.includes('place') || command.includes('drop') || command.includes('put down')) {
+      if (this.heldObject) {
+        this._spawnHeldObject();
+        if (window.showMessage) {
+          window.showMessage('Placing object via voice command');
+        }
+      } else {
+        if (window.showMessage) {
+          window.showMessage('No object to place. Say a model name first! (car, tree, cactus, etc.)');
+        }
+      }
+    }
+    else if (command.includes('sky') && (command.includes('clear') || command.includes('bright'))) {
+      this.setSkyClarity(1.0);
+      if (window.showMessage) {
+        window.showMessage('Setting sky to clear');
+      }
+    }
+    else if (command.includes('sky') && (command.includes('dark') || command.includes('cloudy'))) {
+      this.setSkyClarity(0.2);
+      if (window.showMessage) {
+        window.showMessage('Setting sky to cloudy');
+      }
+    }
+    else {
+      // Show available models if no match found
+      const availableModels = this._getAvailableModels().join(', ');
+      if (window.showMessage) {
+        window.showMessage(`Available models: ${availableModels}. Or say "place", "clear sky", etc.`);
+      }
+    }
+  }
+
+  _matchObjectKeyword(command) {
+    // Define available models and their keywords
+    const modelKeywords = {
+      'car': ['car', 'vehicle', 'automobile'],
+      'tree': ['tree', 'plant'],
+      'cactus': ['cactus', 'succulent'],
+      'bonfire': ['bonfire', 'fire', 'campfire'],
+      'firework': ['firework', 'fireworks', 'rocket'],
+      'toaster': ['toaster', 'toast'],
+      'flower': ['flower', 'bloom'],
+      'desk': ['desk', 'table']
+    };
+    
+    // Check each model for keyword matches
+    for (const [model, keywords] of Object.entries(modelKeywords)) {
+      for (const keyword of keywords) {
+        if (command.includes(keyword)) {
+          return model;
+        }
+      }
+    }
+    
+    return null;
+  }
+
+  _getAvailableModels() {
+    return ['car', 'tree', 'cactus', 'bonfire', 'firework', 'toaster', 'flower', 'desk'];
+  }
+
+  startVoiceListening() {
+    if (!this.voiceEnabled || !this.whisperClient) {
+      if (window.showMessage) {
+        window.showMessage('❌ Voice control not available. Check Whisper server connection.');
+      }
+      console.warn('Voice control not available');
+      return false;
+    }
+    
+    if (this.isListening) {
+      console.warn('Already listening');
+      return false;
+    }
+    
+    this.whisperClient.startRecording();
+    this.isListening = true;
+    
+    if (window.showMessage) {
+      window.showMessage('🎤 Listening... Say a model name: car, tree, cactus, bonfire, etc.');
+    }
+    
+    return true;
+  }
+
+  stopVoiceListening() {
+    if (!this.isListening || !this.whisperClient) {
+      return false;
+    }
+    
+    this.whisperClient.stopRecording();
+    this.isListening = false;
+    
+    if (window.showMessage) {
+      window.showMessage('🔄 Processing your voice command...');
+    }
+    
+    return true;
   }
 
   _createSky() {
@@ -298,6 +475,24 @@ export class XRVisualizer {
       }
       if (e.code === 'KeyG') {
         this._handleObjectGeneration();
+      }
+      if (e.code === 'KeyP') {
+        // Place held object
+        if (this.heldObject) {
+          this._spawnHeldObject();
+        } else {
+          if (window.showMessage) {
+            window.showMessage('No object to place. Load an object first! (G for prompt, V for voice)');
+          }
+        }
+      }
+      if (e.code === 'KeyV') {
+        // Voice control toggle
+        if (!this.isListening) {
+          this.startVoiceListening();
+        } else {
+          this.stopVoiceListening();
+        }
       }
     });
 
@@ -572,11 +767,19 @@ export class XRVisualizer {
 
   async _generateObjectFromPrompt(prompt) {
     if (this.isGenerating) {
+      if (window.showMessage) {
+        window.showMessage('Already generating an object, please wait...');
+      }
       return;
     }
     
     this.isGenerating = true;
     this.promptMode = false;
+    
+    // Show immediate feedback
+    if (window.showMessage) {
+      window.showMessage(`🎯 Generating: "${prompt}"...`);
+    }
     
     try {
       // Call backend API
@@ -599,14 +802,29 @@ export class XRVisualizer {
       const data = await response.json();
       console.log('Model generated:', data);
 
+      if (window.showMessage) {
+        window.showMessage('🎨 Object created! Loading into your hand...');
+      }
+
       // Load and hold the object - prepend /api for frontend proxy
       const fullModelUrl = '/api' + data.model_url;
       await this._loadAndHoldObject(fullModelUrl);
       
     } catch (error) {
       console.error('Error generating object:', error);
+      
+      if (window.showMessage) {
+        window.showMessage(`❌ Generation failed: ${error.message}. Loading fallback object...`);
+      }
+      
       // Fallback: load a default object
-      await this._loadAndHoldObject('/api/models/crystal.glb'); // Fallback object
+      try {
+        await this._loadAndHoldObject('/api/models/crystal.glb'); // Fallback object
+      } catch (fallbackError) {
+        if (window.showMessage) {
+          window.showMessage('❌ Could not load any object. Check your connection.');
+        }
+      }
     } finally {
       this.isGenerating = false;
       this.keyboardEnabled = true; // Re-enable movement
@@ -644,9 +862,9 @@ export class XRVisualizer {
           
           console.log('Object loaded and held:', modelUrl);
           
-          // Show instruction to spawn
+          // Show instruction to spawn with enhanced feedback
           if (window.showMessage) {
-            window.showMessage('Press G again to spawn the object, or move around to see it in your hand!');
+            window.showMessage('✅ Object ready! Press G or say "place" to spawn it in the world!');
           }
           
           resolve(model);
