@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import { VRButton } from './VRButton.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { WhisperClient } from './WhisperClient.js';
+import { ARButton } from 'three/addons/webxr/ARButton.js';
+import { XRHandModelFactory } from 'https://esm.sh/three@0.158.0/examples/jsm/webxr/XRHandModelFactory.js';
 
 export class XRVisualizer {
   constructor(container) {
@@ -34,11 +36,26 @@ export class XRVisualizer {
     this.keyboardEnabled = true;
     this.pointerLocked = false;
     this.inVR = false;
+    // AR state
+    this.isAR = false;
+    this.hitTestSource = null;
+    this.viewerSpace = null;
+    this.localSpace = null;
+    this.reticle = null;
+    this.placedDesk = false;
 
     // Voice control setup
     this.whisperClient = null;
     this.voiceEnabled = false;
     this.isListening = false;
+
+    // Hand tracking state
+    this.handModels = { left: null, right: null };
+    this.pinchState = { left: false, right: false };
+    this.lastPinchState = { left: false, right: false };
+    this.grabbedObject = null;
+    this.isHolding = false;
+    this.handModelFactory = null;
 
     this._initScene();
     this._addEventListeners();
@@ -47,6 +64,13 @@ export class XRVisualizer {
 
     // Enable WebXR
     this.renderer.xr.enabled = true;
+    // Add AR button with hit-test support
+    document.body.appendChild(ARButton.createButton(this.renderer, {
+      requiredFeatures: ['hit-test'],
+      optionalFeatures: ['dom-overlay'],
+      domOverlay: { root: document.body }
+    }));
+    // Keep VR button
     document.body.appendChild(VRButton.createButton(this.renderer));
   }
 
@@ -70,12 +94,13 @@ export class XRVisualizer {
     this.cameraRig.add(this.camera);
     this.scene.add(this.cameraRig);
 
-    // Renderer setup - optimized for performance
+    // Renderer setup - optimized for performance and AR
     this.renderer = new THREE.WebGLRenderer({ 
       antialias: false, // disable for performance
-      alpha: false,
+      alpha: true,      // AR: transparent to show camera passthrough
       powerPreference: "high-performance"
     });
+    this.renderer.setClearColor(0x000000, 0); // AR: fully transparent background
     console.log('Renderer created:', this.renderer);
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.renderer.shadowMap.enabled = true;
@@ -99,15 +124,75 @@ export class XRVisualizer {
     // Lighting setup
     this._setupLighting();
 
-    // VR event listeners
-    this.renderer.xr.addEventListener('sessionstart', () => {
-      this.cameraRig.position.y = 0; // zero height for VR
-      this.inVR = true;
+    // WebXR session events (AR + VR)
+    this.renderer.xr.addEventListener('sessionstart', async () => {
+      const session = this.renderer.xr.getSession();
+      this.inVR = true; // in an XR session (VR or AR)
+      try {
+        // Try AR setup (if AR session, hit-test will succeed)
+        this.viewerSpace = await session.requestReferenceSpace('viewer');
+        this.localSpace = await session.requestReferenceSpace('local');
+        this.hitTestSource = await session.requestHitTestSource({ space: this.viewerSpace });
+        this.isAR = true;
+
+        // Hide virtual environment in AR
+        if (this.skyDome) this.scene.remove(this.skyDome);
+        if (this.groundPlane) this.scene.remove(this.groundPlane);
+
+        // Remove pre-placed desk; place via reticle tap
+        if (this.centerDesk) {
+          this.scene.remove(this.centerDesk);
+          this.centerDesk = null;
+          this.placedDesk = false;
+        }
+
+        // Create placement reticle and controller select handler
+        this._createARReticle();
+        const controller = this.renderer.xr.getController(0);
+        controller.addEventListener('select', () => this._onARSelect());
+        this.scene.add(controller);
+      } catch (e) {
+        // Not AR; treat as VR
+        this.isAR = false;
+        this.cameraRig.position.y = 0; // zero height for VR
+      }
+
+      // Hand tracking setup
+      if (session && session.inputSources) {
+        session.addEventListener('inputsourceschange', this._onInputSourcesChange.bind(this));
+        // Add hand models for any hands present
+        for (const inputSource of session.inputSources) {
+          if (inputSource.hand) {
+            const handedness = inputSource.handedness;
+            if (!this.handModels[handedness]) {
+              const handModel = this.handModelFactory.createHandModel(inputSource);
+              this.handModels[handedness] = handModel;
+              this.scene.add(handModel);
+            }
+          }
+        }
+      }
     });
 
     this.renderer.xr.addEventListener('sessionend', () => {
-      this.cameraRig.position.y = 1.6;
+      // Cleanup AR state
       this.inVR = false;
+      this.isAR = false;
+      this.hitTestSource = null;
+      this.viewerSpace = null;
+      this.localSpace = null;
+      if (this.reticle) {
+        this.scene.remove(this.reticle);
+        this.reticle.geometry.dispose();
+        this.reticle.material.dispose();
+        this.reticle = null;
+      }
+
+      // Restore virtual environment when leaving AR
+      if (!this.skyDome) this._createSky();
+      if (!this.groundPlane) this._createGroundPlane();
+
+      this.cameraRig.position.y = 1.6;
     });
 
     // Audio context for ambient sounds
@@ -547,30 +632,49 @@ export class XRVisualizer {
   }
 
   _animate() {
-    const time = performance.now() * 0.001; // seconds
-    const moveSpeed = 0.12; // slightly reduced for more controlled movement
+    // Use WebXR frame/time and update AR hit-test
+    this.renderer.setAnimationLoop((time, frame) => {
+      const moveSpeed = 0.12;
 
-    // Movement controls
-    const forward = new THREE.Vector3();
-    this.camera.getWorldDirection(forward);
-    forward.y = 0;
-    forward.normalize();
+      // Desktop/VR movement
+      const forward = new THREE.Vector3();
+      this.camera.getWorldDirection(forward);
+      forward.y = 0; forward.normalize();
 
-    const right = new THREE.Vector3();
-    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+      const right = new THREE.Vector3();
+      right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
-    const moveVector = new THREE.Vector3();
-    moveVector.addScaledVector(forward, this.moveState.forward);
-    moveVector.addScaledVector(right, this.moveState.right);
-    moveVector.multiplyScalar(moveSpeed);
+      const moveVector = new THREE.Vector3();
+      moveVector.addScaledVector(forward, this.moveState.forward);
+      moveVector.addScaledVector(right, this.moveState.right);
+      moveVector.multiplyScalar(moveSpeed);
+      this.cameraRig.position.add(moveVector);
 
-    this.cameraRig.position.add(moveVector);
+      // AR hit-test + reticle update
+      if (this.isAR && frame && this.hitTestSource && this.localSpace) {
+        const results = frame.getHitTestResults(this.hitTestSource);
+        if (results.length > 0) {
+          const hit = results[0];
+          const pose = hit.getPose(this.localSpace);
+          if (pose) {
+            if (this.reticle) {
+              this.reticle.visible = true;
+              this.reticle.matrix.fromArray(pose.transform.matrix);
+            }
+          }
+        } else if (this.reticle) {
+          this.reticle.visible = false;
+        }
+      }
 
-    // Update held object animation
-    this._updateHeldObject(time);
+      // Hand tracking update
+      this._updateHandTracking(frame);
 
-    this.renderer.setAnimationLoop(this._animate.bind(this));
-    this.renderer.render(this.scene, this.camera);
+      // Held object animation (breathing/bob)
+      this._updateHeldObject((time || performance.now()) * 0.001);
+
+      this.renderer.render(this.scene, this.camera);
+    });
   }
 
   // Method to adjust sky clarity (can be called externally)
@@ -1024,6 +1128,175 @@ export class XRVisualizer {
       // Add breathing effect - subtle scale animation
       const breathingScale = 1 + Math.sin(anim.time * 1.5) * 0.02;
       this.heldObject.scale.setScalar(this.heldObject.userData.originalScale * breathingScale);
+    }
+  }
+
+  // Create an AR placement reticle
+  _createARReticle() {
+    const geo = new THREE.RingGeometry(0.12, 0.15, 32);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
+    const reticle = new THREE.Mesh(geo, mat);
+    reticle.rotation.x = -Math.PI / 2;
+    reticle.matrixAutoUpdate = false;
+    reticle.visible = false;
+    this.scene.add(reticle);
+    this.reticle = reticle;
+  }
+
+  // Place held object or desk at the reticle when selecting in AR
+  _onARSelect() {
+    if (!this.isAR || !this.reticle || !this.reticle.visible) return;
+
+    const target = new THREE.Vector3();
+    const quat = new THREE.Quaternion();
+    const scale = new THREE.Vector3();
+    this.reticle.matrix.decompose(target, quat, scale);
+
+    if (this.heldObject) {
+      // Place currently held object
+      this.camera.remove(this.heldObject);
+      this.heldObject.position.copy(target);
+      this.heldObject.rotation.set(0, Math.random() * Math.PI * 2, 0);
+      const s = (this.heldObject.userData?.originalScale || 1) * 2.5;
+      this.heldObject.scale.setScalar(s);
+      delete this.heldObject.userData?.holdingAnimation;
+      delete this.heldObject.userData?.originalScale;
+      this.scene.add(this.heldObject);
+      this.loadedModels.push(this.heldObject);
+      this.heldObject = null;
+      this._createSpawnEffect(target.x, target.z);
+      if (window.showMessage) window.showMessage('Placed object');
+    } else {
+      // Place or move the desk
+      const placeDesk = (desk) => {
+        desk.position.copy(target);
+        desk.rotation.y = Math.PI;
+        if (!this.centerDesk) {
+          this.centerDesk = desk;
+          this.scene.add(desk);
+        }
+        this.placedDesk = true;
+      };
+
+      if (this.centerDesk) {
+        placeDesk(this.centerDesk);
+      } else {
+        this.gltfLoader.load(
+          './assets/models/desk.glb',
+          (gltf) => {
+            const desk = gltf.scene.clone();
+            desk.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+            placeDesk(desk);
+          },
+          undefined,
+          () => {
+            // Fallback simple desk
+            const desk = new THREE.Group();
+            const top = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.04, 0.5), new THREE.MeshLambertMaterial({ color: 0x8b4513 }));
+            top.position.y = 0.75;
+            desk.add(top);
+            placeDesk(desk);
+          }
+        );
+      }
+      if (window.showMessage) window.showMessage('Placed desk');
+    }
+  }
+
+  _onInputSourcesChange(event) {
+    const session = this.renderer.xr.getSession();
+    if (session) {
+      for (const inputSource of session.inputSources) {
+        if (inputSource.hand) {
+          const handedness = inputSource.handedness;
+          if (!this.handModels[handedness]) {
+            const handModel = this.handModelFactory.createHandModel(inputSource);
+            this.handModels[handedness] = handModel;
+            this.scene.add(handModel);
+          }
+        }
+      }
+    }
+  }
+
+  // Pinch detection and object spawn/hold
+  _updateHandTracking(frame) {
+    if (!this.renderer.xr.isPresenting) return;
+    const session = this.renderer.xr.getSession();
+    if (!session) return;
+    for (const [handedness, handModel] of Object.entries(this.handModels)) {
+      if (!handModel) continue;
+      const inputSource = Array.from(session.inputSources).find(
+        src => src.handedness === handedness && src.hand
+      );
+      if (inputSource && inputSource.hand) {
+        try {
+          const referenceSpace = this.renderer.xr.getReferenceSpace();
+          const framePose = frame.getPose(inputSource.hand.get('index-finger-tip'), referenceSpace);
+          if (framePose) {
+            const isPinching = this._detectPinch(inputSource.hand, frame, referenceSpace);
+            this._handlePinchGesture(handedness, isPinching, framePose.transform.position);
+          }
+        } catch (e) {}
+      }
+    }
+    this._updateGrabbedObject();
+  }
+
+  _detectPinch(hand, frame, referenceSpace) {
+    try {
+      const thumbTip = frame.getPose(hand.get('thumb-tip'), referenceSpace);
+      const indexTip = frame.getPose(hand.get('index-finger-tip'), referenceSpace);
+      if (thumbTip && indexTip) {
+        const distance = new THREE.Vector3()
+          .subVectors(
+            new THREE.Vector3().fromArray([thumbTip.transform.position.x, thumbTip.transform.position.y, thumbTip.transform.position.z]),
+            new THREE.Vector3().fromArray([indexTip.transform.position.x, indexTip.transform.position.y, indexTip.transform.position.z])
+          ).length();
+        return distance < 0.03; // 3cm threshold for pinch
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  _handlePinchGesture(handedness, isPinching, position) {
+    const wasPinching = this.lastPinchState[handedness];
+    this.pinchState[handedness] = isPinching;
+    if (isPinching && !wasPinching) {
+      this._onPinchStart(handedness, position);
+    } else if (!isPinching && wasPinching) {
+      this._onPinchEnd(handedness);
+    }
+    this.lastPinchState[handedness] = isPinching;
+  }
+
+  _onPinchStart(handedness, position) {
+    if (!this.grabbedObject && this.loadedModels.length > 0) {
+      // Spawn a new object from loaded models
+      const randomIndex = Math.floor(Math.random() * this.loadedModels.length);
+      const newObject = this.loadedModels[randomIndex].clone();
+      newObject.position.set(position.x, position.y, position.z);
+      newObject.scale.setScalar(0.5);
+      this.scene.add(newObject);
+      this.grabbedObject = newObject;
+      this.isHolding = true;
+    }
+  }
+
+  _onPinchEnd(handedness) {
+    if (this.grabbedObject && handedness === 'right') {
+      this.grabbedObject = null;
+      this.isHolding = false;
+    }
+  }
+
+  _updateGrabbedObject() {
+    if (this.grabbedObject && this.isHolding) {
+      // Update object position based on right hand
+      const rightHand = this.handModels.right;
+      if (rightHand) {
+        this.grabbedObject.position.copy(rightHand.position);
+      }
     }
   }
 }
