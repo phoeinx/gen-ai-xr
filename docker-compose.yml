@@ -6,7 +6,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:80"
+      - "3000:80" # keep exposing frontend on host:3000
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
     depends_on:
@@ -15,6 +15,17 @@ services:
     environment:
       - BACKEND_URL=http://backend:8000
       - WHISPER_URL=ws://whisper:9000
+    networks:
+      - rivendell-network
+
+  proxy:
+    image: nginx:stable-alpine
+    ports:
+      - "80:80" # tiny reverse proxy on host:80 -> frontend
+    volumes:
+      - ./proxy/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
     networks:
       - rivendell-network
 
