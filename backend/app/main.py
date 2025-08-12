@@ -9,7 +9,7 @@ import os
 from typing import Dict, Optional
 import time
 
-app = FastAPI(title="Rivendell 3D Model Generator", version="1.0.0")
+app = FastAPI(title="3D Model Generator", version="1.0.0")
 
 # Enable CORS
 app.add_middleware(
@@ -141,7 +141,7 @@ async def health_check():
 @app.get("/")
 async def root():
     return {
-        "message": "Rivendell 3D Model Generator API",
+        "message": "3D Model Generator API",
         "available_models": list(AVAILABLE_MODELS.keys()),
         "model_files": list(AVAILABLE_MODELS.values()),
         "total_models": len(AVAILABLE_MODELS)

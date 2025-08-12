@@ -25,17 +25,16 @@ export class XRVisualizer {
     this.config = {
       environment: {
         size: 150, // environment size
-      },
-      colors: {
-        flowerColors: [0xff69b4, 0xffd700, 0x9370db, 0x00ced1, 0xff1493] // Keep for spawning flowers
       }
     };
 
+    // Web-based movement
     this.moveState = { forward: 0, right: 0 };
     this.lookState = { x: 0, y: 0 };
     this.keyboardEnabled = true;
     this.pointerLocked = false;
     this.inVR = false;
+
     // AR state
     this.isAR = false;
     this.hitTestSource = null;
@@ -70,21 +69,17 @@ export class XRVisualizer {
       optionalFeatures: ['dom-overlay'],
       domOverlay: { root: document.body }
     }));
-    // Keep VR button
-    document.body.appendChild(VRButton.createButton(this.renderer));
   }
 
   _initScene() {
-    console.log('_initScene called');
+    console.log('Initializing WebXR scene');
     this.scene = new THREE.Scene();
-    console.log('Scene created:', this.scene);
     this.camera = new THREE.PerspectiveCamera(
       75,
       this.container.clientWidth / this.container.clientHeight,
       0.1,
       1000
     );
-    console.log('Camera created:', this.camera);
 
     this.camera.rotation.order = 'YXZ';
 
@@ -112,15 +107,6 @@ export class XRVisualizer {
     // Raycaster for interactions
     this.raycaster = new THREE.Raycaster();
 
-    // Create clear sky
-    this._createSky();
-
-    // Ground plane
-    this._createGroundPlane();
-
-    // Load and place the desk at center stage
-    this._loadCenterDesk();
-
     // Lighting setup
     this._setupLighting();
 
@@ -134,17 +120,6 @@ export class XRVisualizer {
         this.localSpace = await session.requestReferenceSpace('local');
         this.hitTestSource = await session.requestHitTestSource({ space: this.viewerSpace });
         this.isAR = true;
-
-        // Hide virtual environment in AR
-        if (this.skyDome) this.scene.remove(this.skyDome);
-        if (this.groundPlane) this.scene.remove(this.groundPlane);
-
-        // Remove pre-placed desk; place via reticle tap
-        if (this.centerDesk) {
-          this.scene.remove(this.centerDesk);
-          this.centerDesk = null;
-          this.placedDesk = false;
-        }
 
         // Create placement reticle and controller select handler
         this._createARReticle();
@@ -280,18 +255,6 @@ export class XRVisualizer {
         }
       }
     }
-    else if (command.includes('sky') && (command.includes('clear') || command.includes('bright'))) {
-      this.setSkyClarity(1.0);
-      if (window.showMessage) {
-        window.showMessage('Setting sky to clear');
-      }
-    }
-    else if (command.includes('sky') && (command.includes('dark') || command.includes('cloudy'))) {
-      this.setSkyClarity(0.2);
-      if (window.showMessage) {
-        window.showMessage('Setting sky to cloudy');
-      }
-    }
     else {
       // Show available models if no match found
       const availableModels = this._getAvailableModels().join(', ');
@@ -367,146 +330,6 @@ export class XRVisualizer {
     }
     
     return true;
-  }
-
-  _createSky() {
-    const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
-    skyGeometry.scale(-1, -1, 1); // invert normals
-
-    // Black sky
-    const skyMaterial = new THREE.MeshBasicMaterial({
-      color: 0x000000, // black sky
-      side: THREE.BackSide,
-      fog: false
-    });
-
-    this.skyDome = new THREE.Mesh(skyGeometry, skyMaterial);
-    this.scene.add(this.skyDome);
-  }
-
-  _createGroundPlane() {
-    const floorGeometry = new THREE.PlaneGeometry(
-      this.config.environment.size * 2,
-      this.config.environment.size * 2,
-      32, // reduced segments for performance
-      32
-    );
-    
-    // Add some variation to the floor
-    const vertices = floorGeometry.attributes.position.array;
-    for (let i = 0; i < vertices.length; i += 3) {
-      vertices[i + 2] += Math.random() * 0.2 - 0.1; // reduced height variation
-    }
-    floorGeometry.attributes.position.needsUpdate = true;
-    floorGeometry.computeVertexNormals();
-
-    const floorMaterial = new THREE.MeshLambertMaterial({ // use Lambert for performance
-      color: 0x228b22, // brighter green
-    });
-
-    this.groundPlane = new THREE.Mesh(floorGeometry, floorMaterial);
-    this.groundPlane.rotation.x = -Math.PI / 2;
-    this.groundPlane.receiveShadow = true;
-    this.scene.add(this.groundPlane);
-  }
-
-  _loadCenterDesk() {
-    // Load the desk GLB model and place it at center stage
-    this.gltfLoader.load(
-      './assets/models/desk.glb',
-      (gltf) => {
-        const deskModel = gltf.scene.clone();
-        
-        // Position the desk in front of the user from working perspective
-        deskModel.position.set(0, 0, -2); // 2 units in front for better working distance
-        
-        // Rotate the desk 180 degrees so user approaches from the working side
-        deskModel.rotation.y = Math.PI;
-        
-        // Scale the desk appropriately (adjust as needed)
-        deskModel.scale.setScalar(1.0);
-        
-        // Ensure the desk sits properly on the ground
-        // Get the bounding box to calculate the proper Y position
-        const box = new THREE.Box3().setFromObject(deskModel);
-        const yOffset = -box.min.y; // Lift the desk so its bottom touches the ground
-        deskModel.position.y = yOffset;
-        
-        // Enable shadows and interaction
-        deskModel.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-            
-            // Make the desk interactable by adding userData
-            child.userData.isInteractable = true;
-            child.userData.objectType = 'desk';
-          }
-        });
-        
-        // Store reference for interactions
-        this.centerDesk = deskModel;
-        
-        // Add to scene and loaded models array
-        this.loadedModels.push(deskModel);
-        this.scene.add(deskModel);
-        
-        console.log('Desk loaded and positioned at center stage');
-      },
-      (progress) => {
-        // Loading progress (optional)
-        console.log('Loading desk model:', (progress.loaded / progress.total * 100) + '%');
-      },
-      (error) => {
-        console.error('Error loading desk model:', error);
-        // Fallback: create a simple geometric desk if GLB fails
-        this._createFallbackDesk();
-      }
-    );
-  }
-
-  _createFallbackDesk() {
-    // Create a simple geometric desk as fallback
-    const deskGroup = new THREE.Group();
-    
-    // Desk top
-    const topGeometry = new THREE.BoxGeometry(4, 0.1, 2);
-    const woodMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-    const deskTop = new THREE.Mesh(topGeometry, woodMaterial);
-    deskTop.position.y = 1.5;
-    deskTop.castShadow = true;
-    deskTop.receiveShadow = true;
-    deskGroup.add(deskTop);
-    
-    // Desk legs
-    const legGeometry = new THREE.BoxGeometry(0.1, 1.5, 0.1);
-    const legPositions = [
-      [-1.8, 0.75, -0.8],
-      [1.8, 0.75, -0.8],
-      [-1.8, 0.75, 0.8],
-      [1.8, 0.75, 0.8]
-    ];
-    
-    legPositions.forEach(pos => {
-      const leg = new THREE.Mesh(legGeometry, woodMaterial);
-      leg.position.set(...pos);
-      leg.castShadow = true;
-      leg.receiveShadow = true;
-      leg.userData.isInteractable = true;
-      leg.userData.objectType = 'desk';
-      deskGroup.add(leg);
-    });
-    
-    // Position the fallback desk in front of user from working side
-    deskGroup.position.set(0, 0, -2);
-    deskGroup.rotation.y = Math.PI; // Rotate 180 degrees for working perspective
-    
-    // Store reference and add to scene
-    this.centerDesk = deskGroup;
-    this.loadedModels.push(deskGroup);
-    this.scene.add(deskGroup);
-    
-    console.log('Fallback desk created at center stage');
   }
 
   _setupLighting() {
@@ -677,42 +500,6 @@ export class XRVisualizer {
     });
   }
 
-  // Method to adjust sky clarity (can be called externally)
-  setSkyClarity(clarity) {
-    // clarity: 0 = overcast, 1 = crystal clear
-    const overcastBlue = new THREE.Color(0x87ceeb);
-    const clearBlue = new THREE.Color(0x4a90e2);
-    
-    const skyColor = new THREE.Color().lerpColors(overcastBlue, clearBlue, clarity);
-    
-    if (this.skyDome?.material) {
-      this.skyDome.material.color.copy(skyColor);
-    }
-
-    // Adjust lighting for clarity
-    if (this.sunLight) {
-      this.sunLight.intensity = 0.8 + clarity * 0.4; // brighter in clear weather
-    }
-  }
-
-  // Method to add interactive elements (can be called externally)
-  addMagicalElement(x, z) {
-    const magicalGeometry = new THREE.SphereGeometry(0.5, 16, 12);
-    const magicalMaterial = new THREE.MeshBasicMaterial({
-      color: 0x00ffff,
-      transparent: true,
-      opacity: 0.6
-    });
-    const magicalSphere = new THREE.Mesh(magicalGeometry, magicalMaterial);
-    magicalSphere.position.set(x, 1, z);
-    
-    // Add pulsing animation
-    magicalSphere.userData = { startTime: performance.now() };
-    this.scene.add(magicalSphere);
-
-    return magicalSphere;
-  }
-
   // Method to handle window/viewport resize
   handleResize() {
     if (!this.camera || !this.renderer || !this.container) {
@@ -781,34 +568,8 @@ export class XRVisualizer {
       },
       (error) => {
         console.error('Error loading flower model:', error);
-        // Fallback: create a simple geometric flower if GLB fails
-        this._createFallbackFlower(spawnX, spawnZ);
       }
     );
-  }
-
-  // Fallback method to create a simple geometric flower if GLB loading fails
-  _createFallbackFlower(x, z) {
-    const flowerGroup = new THREE.Group();
-
-    // Simple stem
-    const stemGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.8, 8);
-    const stemMaterial = new THREE.MeshLambertMaterial({ color: 0x228b22 });
-    const stem = new THREE.Mesh(stemGeometry, stemMaterial);
-    stem.position.y = 0.4;
-    flowerGroup.add(stem);
-
-    // Simple flower head
-    const flowerGeometry = new THREE.SphereGeometry(0.15, 8, 6);
-    const flowerMaterial = new THREE.MeshLambertMaterial({ color: 0xff69b4 });
-    const flowerHead = new THREE.Mesh(flowerGeometry, flowerMaterial);
-    flowerHead.position.y = 0.8;
-    flowerGroup.add(flowerHead);
-
-    flowerGroup.position.set(x, 0, z);
-    
-    this.loadedModels.push(flowerGroup);
-    this.scene.add(flowerGroup);
   }
 
   // Optional spawn effect for visual feedback

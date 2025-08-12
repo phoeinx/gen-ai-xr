@@ -149,10 +149,6 @@
   </style>
 </head>
 <body>
-  <div id="vis-controls">
-    <label for="skyClarity">Sky Clarity:</label>
-    <input type="range" id="skyClarity" min="0" max="1" step="0.1" value="1.0" />
-  </div>
   
   <div class="instructions">
     <strong>Instructions:</strong><br>
@@ -184,7 +180,7 @@
   
   <script>
     // Global functions for prompt system
-    let vizualizer;
+              let visualizer;
     
     function showPromptInput() {
       const overlay = document.getElementById('promptOverlay');
@@ -211,8 +207,8 @@
       
       if (prompt) {
         // Send prompt directly to the visualization (no iframe here)
-        if (vizualizer && vizualizer._generateObjectFromPrompt) {
-          vizualizer._generateObjectFromPrompt(prompt);
+        if (visualizer && visualizer._generateObjectFromPrompt) {
+          visualizer._generateObjectFromPrompt(prompt);
         }
       }
       
@@ -241,53 +237,32 @@
           import { XRVisualizer } from './XRViz.js';
 
     const container = document.getElementById('vis-container');
-      vizualizer = new XRVisualizer(container);
-    
-    const skyClarity = document.getElementById('skyClarity');
+              visualizer = new XRVisualizer(container);
 
-    // Sky clarity control
-    skyClarity.addEventListener('input', () => {
-      const clarity = parseFloat(skyClarity.value);
-      if (!isNaN(clarity)) {
-        vizualizer.setSkyClarity(clarity);
-      }
-    });
+        window.addEventListener('message', (event) => {
+          const data = event.data;
+          if (!data || typeof data !== 'object') return;
 
-    // Handle messages from parent window
-    window.addEventListener('message', (event) => {
-      if (event.data?.type === 'vis-command') {
-        const { command, value } = event.data;
-        
-        switch(command) {
-          case 'setSkyClarity':
-            vizualizer.setSkyClarity(value);
-            skyClarity.value = value;
-            break;
-          case 'addMagicalElement':
-            const { x, z } = value;
-            vizualizer.addMagicalElement(x, z);
-            break;
-          default:
-            console.log('Unknown vis command:', command);
-        }
-      } else if (event.data?.type === 'resize-viewport') {
-        // Handle viewport resize from parent (fullscreen toggle)
-        if (vizualizer && vizualizer.handleResize) {
-          setTimeout(() => {
-            vizualizer.handleResize();
-          }, 50); // Small delay to ensure iframe has resized
-        }
-      }
-    });
+        switch (data.type) {
+          case 'resize-viewport':
+            if (visualizer && visualizer.handleResize) {
+              setTimeout(() => {
+                visualizer.handleResize();
+              }, 50);
+            }
+          break;
 
-      // Listen for messages from visualization
-    window.addEventListener('message', (event) => {
-      const msg = event.data;
-      
-      if (msg?.type === 'show-prompt') {
-        showPromptInput();
-      } else if (msg?.type === 'show-message') {
-        showMessage(msg.message);
+        case 'show-prompt':
+          showPromptInput();
+          break;
+
+        case 'show-message':
+          showMessage(data.message);
+          break;
+
+        default:
+          // ignore other messages
+          break;
       }
     });
 

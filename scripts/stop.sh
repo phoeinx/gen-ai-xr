@@ -2,7 +2,7 @@
 
 # Stop development environment
 
-echo "🛑 Stopping Rivendell WebXR Development Environment..."
+echo "🛑 Stopping WebXR Development Environment..."
 
 docker-compose down
 

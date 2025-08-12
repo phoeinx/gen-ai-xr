@@ -1,7 +1,7 @@
 @echo off
-REM Development startup script for Rivendell WebXR (Windows)
+REM Development startup script for WebXR (Windows)
 
-echo 🧝‍♂️ Starting Rivendell WebXR Development Environment...
+echo 🧝‍♂️ Starting WebXR Development Environment...
 
 REM Check if Docker is running
 docker info >nul 2>&1
@@ -39,7 +39,7 @@ if %errorlevel% equ 0 (
 )
 
 echo.
-echo 🚀 Rivendell WebXR is ready!
+echo 🚀 WebXR is ready!
 echo    Frontend: http://localhost:3000
 echo    Backend:  http://localhost:8000
 echo    API Docs: http://localhost:8000/docs
