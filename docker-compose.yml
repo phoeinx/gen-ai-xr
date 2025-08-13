@@ -1,18 +1,18 @@
 services:
   frontend:
-    image: caddy:2
+    build:
+      context: frontend
+      dockerfile: Dockerfile.dev
     ports:
-      - "8080:80"     # HTTP -> redirects to HTTPS
-      - "8443:443"    # HTTPS (local dev)
-    restart: unless-stopped
+      - "3000:80"
     volumes:
-      - ./frontend:/usr/share/caddy:ro       # built static assets live here
-      - ./frontend/Caddyfile:/etc/caddy/Caddyfile:ro  # the file above
-      - caddy_data:/data
-      - caddy_config:/config
+      - ./frontend:/usr/share/nginx/html:ro
     depends_on:
       - backend
       - whisper
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - WHISPER_URL=ws://whisper:9000
     networks:
       - ar-gen-network
 
