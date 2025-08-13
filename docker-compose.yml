@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./frontend:/usr/share/caddy:ro       # built static assets live here
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro  # the file above
+      - ./frontend/Caddyfile:/etc/caddy/Caddyfile:ro  # the file above
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

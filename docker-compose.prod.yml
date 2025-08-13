@@ -1,56 +1,72 @@
 services:
   frontend:
-    image: caddy:2
-    ports:
-      - 80:80
-      - 443:443
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.prod
+    image: ar-gen/frontend:prod
     restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - WHISPER_URL=http://whisper:9000
     volumes:
-      - ./site:/usr/share/caddy:ro
-      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
       - backend
       - whisper
-    environment:
-      - BACKEND_URL=http://backend:8000
-      - WHISPER_URL=ws://whisper:9000
     networks:
       - ar-gen-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget -qO- http://localhost:80/ >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
-    restart: always
+    expose:
+      - "8000"
+    restart: unless-stopped
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=production
     volumes:
       - ./backend/models:/app/models
       - ./backend/app:/app/app
-    environment:
-      - PYTHONPATH=/app
-      - ENVIRONMENT=development
     networks:
       - ar-gen-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget -qO- http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   whisper:
     build:
       context: ./whisper
       dockerfile: Dockerfile
-    ports:
-      - "9000:9000"
-    restart: always
-    volumes:
-      - ./whisper:/app
+    expose:
+      - "9000"
+    restart: unless-stopped
     environment:
       - WHISPER_MODEL=base
       - WHISPER_DEVICE=auto
       - WHISPER_HOST=0.0.0.0
       - WHISPER_PORT=9000
+    volumes:
+      - ./whisper:/app
     networks:
       - ar-gen-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget -qO- http://localhost:9000/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
 volumes:
   caddy_data:

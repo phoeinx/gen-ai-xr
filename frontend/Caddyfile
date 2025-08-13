@@ -8,13 +8,11 @@ localhost {
     file_server
     tls internal
 
-    # --- API → backend ---
 	handle_path /api/* {
 		uri strip_prefix /api
 		reverse_proxy backend:8000
 	}
 
-	# --- Whisper service ---
 	handle_path /whisper/* {
 		uri strip_prefix /whisper
 		reverse_proxy whisper:9000

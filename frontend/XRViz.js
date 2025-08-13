@@ -177,9 +177,8 @@ export class XRVisualizer {
   async _initVoiceControl() {
     try {
       // Initialize Whisper client
-      const whisperUrl = window.location.protocol === 'https:' ? 
-        'wss://localhost:9000' : 'ws://localhost:9000';
-      
+      const wsScheme = location.protocol === 'https:' ? 'wss' : 'ws';
+      const whisperUrl = `${wsScheme}://${location.host}/whisper/ws`;
       this.whisperClient = new WhisperClient(whisperUrl);
       
       // Set up event handlers

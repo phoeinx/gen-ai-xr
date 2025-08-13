@@ -1,0 +1,5 @@
+FROM caddy:2-alpine
+# Copy static files into the image
+COPY ./ /usr/share/caddy/
+# Use the production Caddyfile
+COPY Caddyfile.prod /etc/caddy/Caddyfile
