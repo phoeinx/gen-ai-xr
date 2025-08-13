@@ -56,9 +56,19 @@ export class XRVisualizer {
     this.isHolding = false;
     this.handModelFactory = null;
 
+    // Controller input state for voice control
+    this.controllerButtonStates = new Map(); // Track button states per controller
+
+    // Voice UI feedback elements
+    this.loadingBarBackground = null;
+    this.loadingBarFill = null;
+    this.transcribingText = null;
+    this.transcriptDisplay = null;
+
     this._initScene();
     this._addEventListeners();
     this._initVoiceControl();
+    this._createVoiceUI();
     this._animate();
 
     // Enable WebXR
@@ -126,6 +136,23 @@ export class XRVisualizer {
         const controller = this.renderer.xr.getController(0);
         controller.addEventListener('select', () => this._onARSelect());
         this.scene.add(controller);
+
+        // Add controller input handlers for voice control (B button)
+        session.addEventListener('inputsourceschange', () => {
+          for (const inputSource of session.inputSources) {
+            if (inputSource.gamepad) {
+              // Listen for gamepad button events
+              this._setupControllerInputListeners(inputSource);
+            }
+          }
+        });
+
+        // Setup initial controllers
+        for (const inputSource of session.inputSources) {
+          if (inputSource.gamepad) {
+            this._setupControllerInputListeners(inputSource);
+          }
+        }
       } catch (e) {
         // Not AR; treat as VR
         this.isAR = false;
@@ -213,6 +240,9 @@ export class XRVisualizer {
   _handleVoiceCommand(text) {
     const command = text.toLowerCase().trim();
     console.log('Voice command received:', command);
+    
+    // Show transcript
+    this._showTranscript(text);
     
     // Enable keyboard for potential prompt mode
     this.keyboardEnabled = true;
@@ -309,6 +339,9 @@ export class XRVisualizer {
     this.whisperClient.startRecording();
     this.isListening = true;
     
+    // Show visual feedback
+    this._showVoiceIndicator(true);
+    
     if (window.showMessage) {
       window.showMessage('🎤 Listening... Say a model name: car, tree, cactus, bonfire, etc.');
     }
@@ -323,6 +356,9 @@ export class XRVisualizer {
     
     this.whisperClient.stopRecording();
     this.isListening = false;
+    
+    // Hide visual feedback
+    this._showVoiceIndicator(false);
     
     if (window.showMessage) {
       window.showMessage('🔄 Processing your voice command...');
@@ -491,6 +527,12 @@ export class XRVisualizer {
 
       // Hand tracking update
       this._updateHandTracking(frame);
+
+      // Controller input update (for voice control B button)
+      this._updateControllerInput();
+
+      // Update voice UI elements
+      this._updateVoiceUI(time || performance.now());
 
       // Held object animation (breathing/bob)
       this._updateHeldObject((time || performance.now()) * 0.001);
@@ -1057,6 +1099,225 @@ export class XRVisualizer {
       if (rightHand) {
         this.grabbedObject.position.copy(rightHand.position);
       }
+    }
+  }
+
+  // Controller input handling for voice control
+  _setupControllerInputListeners(inputSource) {
+    // Initialize button state tracking for this controller
+    if (!this.controllerButtonStates.has(inputSource)) {
+      this.controllerButtonStates.set(inputSource, {
+        bButton: false,
+        lastBButton: false
+      });
+    }
+  }
+
+  _updateControllerInput() {
+    if (!this.renderer.xr.isPresenting) return;
+    
+    const session = this.renderer.xr.getSession();
+    if (!session) return;
+
+    // Check all input sources for gamepad input
+    for (const inputSource of session.inputSources) {
+      if (inputSource.gamepad) {
+        this._checkControllerButtons(inputSource);
+      }
+    }
+  }
+
+  _checkControllerButtons(inputSource) {
+    const gamepad = inputSource.gamepad;
+    if (!gamepad || !gamepad.buttons) return;
+
+    // Get or initialize button state for this controller
+    let buttonState = this.controllerButtonStates.get(inputSource);
+    if (!buttonState) {
+      buttonState = { bButton: false, lastBButton: false };
+      this.controllerButtonStates.set(inputSource, buttonState);
+    }
+
+    // Check B button (typically button index 1 on most XR controllers)
+    // Button 1 is commonly the B button on Oculus/Meta controllers
+    const bButtonPressed = gamepad.buttons[1] && gamepad.buttons[1].pressed;
+    
+    // Detect button press (not held)
+    if (bButtonPressed && !buttonState.lastBButton) {
+      // B button was just pressed - toggle voice recording
+      console.log('B button pressed - toggling voice listening');
+      if (!this.isListening) {
+        this.startVoiceListening();
+      } else {
+        this.stopVoiceListening();
+      }
+    }
+
+    // Update button states
+    buttonState.lastBButton = buttonState.bButton;
+    buttonState.bButton = bButtonPressed;
+  }
+
+  // Voice UI methods for visual feedback
+  _createVoiceUI() {
+    // Create loading bar background
+    const loadingBarGeometry = new THREE.PlaneGeometry(1.2, 0.1);
+    const loadingBarMaterial = new THREE.MeshBasicMaterial({
+      color: 0x333333,
+      transparent: true,
+      opacity: 0.8,
+      side: THREE.DoubleSide
+    });
+    this.loadingBarBackground = new THREE.Mesh(loadingBarGeometry, loadingBarMaterial);
+    this.loadingBarBackground.visible = false;
+    
+    // Create loading bar fill
+    const loadingFillGeometry = new THREE.PlaneGeometry(1.2, 0.1);
+    const loadingFillMaterial = new THREE.MeshBasicMaterial({
+      color: 0x00ff88,
+      transparent: true,
+      opacity: 0.9,
+      side: THREE.DoubleSide
+    });
+    this.loadingBarFill = new THREE.Mesh(loadingFillGeometry, loadingFillMaterial);
+    this.loadingBarFill.visible = false;
+    
+    // Create "Transcribing..." text
+    const transcribingCanvas = document.createElement('canvas');
+    transcribingCanvas.width = 512;
+    transcribingCanvas.height = 64;
+    const transcribingContext = transcribingCanvas.getContext('2d');
+    transcribingContext.fillStyle = 'rgba(0, 0, 0, 0)';
+    transcribingContext.fillRect(0, 0, transcribingCanvas.width, transcribingCanvas.height);
+    transcribingContext.fillStyle = 'white';
+    transcribingContext.font = 'bold 32px Arial';
+    transcribingContext.textAlign = 'center';
+    transcribingContext.textBaseline = 'middle';
+    transcribingContext.fillText('Transcribing...', transcribingCanvas.width / 2, transcribingCanvas.height / 2);
+    
+    const transcribingTexture = new THREE.CanvasTexture(transcribingCanvas);
+    const transcribingGeometry = new THREE.PlaneGeometry(1, 0.125);
+    const transcribingMaterial = new THREE.MeshBasicMaterial({
+      map: transcribingTexture,
+      transparent: true,
+      side: THREE.DoubleSide
+    });
+    this.transcribingText = new THREE.Mesh(transcribingGeometry, transcribingMaterial);
+    this.transcribingText.visible = false;
+    
+    // Create transcript display plane
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const context = canvas.getContext('2d');
+    context.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    const transcriptGeometry = new THREE.PlaneGeometry(1, 0.25);
+    const transcriptMaterial = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      side: THREE.DoubleSide
+    });
+    this.transcriptDisplay = new THREE.Mesh(transcriptGeometry, transcriptMaterial);
+    this.transcriptDisplay.visible = false;
+    
+    // Add to camera so they follow the user
+    this.camera.add(this.loadingBarBackground);
+    this.camera.add(this.loadingBarFill);
+    this.camera.add(this.transcribingText);
+    this.camera.add(this.transcriptDisplay);
+  }
+
+  _showVoiceIndicator(show) {
+    if (!this.loadingBarBackground || !this.loadingBarFill || !this.transcribingText) return;
+    
+    this.loadingBarBackground.visible = show;
+    this.loadingBarFill.visible = show;
+    this.transcribingText.visible = show;
+    
+    if (show) {
+      // Position elements in view
+      this.loadingBarBackground.position.set(0, 0.6, -2);
+      this.loadingBarFill.position.set(0, 0.6, -1.99); // Slightly in front
+      this.transcribingText.position.set(0, 0.75, -2);
+      
+      // Initialize loading progress
+      this.loadingBarFill.userData.startTime = performance.now();
+      this.loadingBarFill.scale.set(0, 1, 1); // Start with no width
+    }
+  }
+
+  _showTranscript(text) {
+    if (!this.transcriptDisplay) return;
+    
+    // Update canvas with new text
+    const canvas = this.transcriptDisplay.material.map.image;
+    const context = canvas.getContext('2d');
+    
+    // Clear canvas
+    context.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw text
+    context.fillStyle = 'white';
+    context.font = '24px Arial';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    
+    // Word wrap for long text
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = '';
+    
+    for (const word of words) {
+      const testLine = currentLine + (currentLine ? ' ' : '') + word;
+      const metrics = context.measureText(testLine);
+      if (metrics.width > canvas.width - 20 && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+    
+    // Draw lines
+    const lineHeight = 30;
+    const startY = (canvas.height - (lines.length - 1) * lineHeight) / 2;
+    for (let i = 0; i < lines.length; i++) {
+      context.fillText(lines[i], canvas.width / 2, startY + i * lineHeight);
+    }
+    
+    // Update texture
+    this.transcriptDisplay.material.map.needsUpdate = true;
+    
+    // Show transcript and position below voice indicator
+    this.transcriptDisplay.visible = true;
+    this.transcriptDisplay.position.set(0, 0.2, -2);
+    
+    // Hide transcript after 4 seconds
+    setTimeout(() => {
+      if (this.transcriptDisplay) {
+        this.transcriptDisplay.visible = false;
+      }
+    }, 4000);
+  }
+
+  _updateVoiceUI(time) {
+    // Animate loading bar progress
+    if (this.loadingBarFill && this.loadingBarFill.visible) {
+      const elapsed = (time - (this.loadingBarFill.userData.startTime || 0)) * 0.001;
+      // Create a smooth back-and-forth loading animation
+      const progress = (Math.sin(elapsed * 2) + 1) / 2; // Oscillate between 0 and 1
+      this.loadingBarFill.scale.set(progress, 1, 1);
+      
+      // Add subtle color pulse to the loading bar
+      const colorIntensity = 0.8 + Math.sin(elapsed * 4) * 0.2; // Pulse between 0.6 and 1.0
+      this.loadingBarFill.material.opacity = colorIntensity;
     }
   }
 }
