@@ -2,17 +2,20 @@ services:
   frontend:
     image: caddy:2
     ports:
-      - "8080:80"     # HTTP -> redirects to HTTPS
-      - "8443:443"    # HTTPS (local dev)
+      - 80:80
+      - 443:443
     restart: unless-stopped
     volumes:
-      - ./frontend:/usr/share/caddy:ro       # built static assets live here
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro  # the file above
+      - ./site:/usr/share/caddy:ro
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
       - backend
       - whisper
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - WHISPER_URL=ws://whisper:9000
     networks:
       - ar-gen-network
 
@@ -20,9 +23,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    # Use expose for internal-only; swap back to "ports" if you need host access.
-    expose:
-      - "8000"
+    ports:
+      - "8000:8000"
     restart: always
     volumes:
       - ./backend/models:/app/models
@@ -37,8 +39,8 @@ services:
     build:
       context: ./whisper
       dockerfile: Dockerfile
-    expose:
-      - "9000"
+    ports:
+      - "9000:9000"
     restart: always
     volumes:
       - ./whisper:/app

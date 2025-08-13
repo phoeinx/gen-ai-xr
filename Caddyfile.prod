@@ -1,0 +1,21 @@
+{
+	# Optional but recommended: receive cert expiry notices
+	email hradilak@mit.edu
+}
+
+# Redirect www → apex (optional)
+www.ar-3d-generation.quest {
+	redir https://ar-3d-generation.quest{uri} permanent
+}
+
+ar-3d-generation.quest {
+	encode zstd gzip
+	root * /usr/share/caddy
+	file_server
+	# Optional hardening headers
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}
