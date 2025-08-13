@@ -8,22 +8,25 @@ www.ar-3d-generation.quest {
 }
 
 ar-3d-generation.quest {
+  # Match HTTPS requests to other services
+  handle_path /api/* {
+    reverse_proxy {$BACKEND_URL}
+  }
+
+  # Current proxy
+  handle_path /whisper/* {
+    reverse_proxy {$WHISPER_URL}
+  }
+
+  # Serve static files as default option
   encode zstd gzip
   root * /usr/share/caddy
   file_server
 
-  # Hardening headers
   header {
     Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
     X-Content-Type-Options "nosniff"
     Referrer-Policy "strict-origin-when-cross-origin"
   }
-
-  handle_path /api/* {
-    reverse_proxy {$BACKEND_URL}   
-
-  route /whisper* {
-    uri strip_prefix /whisper
-    reverse_proxy {$WHISPER_URL}
-  }
 }
+
