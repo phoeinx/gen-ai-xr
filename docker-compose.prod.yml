@@ -1,8 +1,8 @@
 services:
   frontend:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile.prod
+      context: frontend
+      dockerfile: Dockerfile.prod
     image: ar-gen/frontend:prod
     restart: unless-stopped
     ports:
