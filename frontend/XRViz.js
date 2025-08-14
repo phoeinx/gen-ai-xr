@@ -1,7 +1,6 @@
 // XRViz.js
 
 import * as THREE from 'three';
-import { VRButton } from './VRButton.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { WhisperClient } from './WhisperClient.js';
 import { ARButton } from 'three/addons/webxr/ARButton.js';
