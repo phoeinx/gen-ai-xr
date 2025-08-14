@@ -3,8 +3,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { ARButton } from 'three/addons/webxr/ARButton.js';
-import { XRHandModelFactory } from 'https://esm.sh/three@0.158.0/examples/jsm/webxr/XRHandModelFactory.js';
 import { VoiceController } from './modules/VoiceController.js';
+import { HandTracker } from './modules/HandTracker.js';
 
 export class XRVisualizer {
   constructor(container) {
@@ -45,17 +45,13 @@ export class XRVisualizer {
     // Voice control setup
     this.voiceController = null;
 
-    // Hand tracking state
-    this.handModels = { left: null, right: null };
-    this.pinchState = { left: false, right: false };
-    this.lastPinchState = { left: false, right: false };
-    this.grabbedObject = null;
-    this.isHolding = false;
-    this.handModelFactory = null;
+    // Hand tracking setup
+    this.handTracker = null;
 
     this._initScene();
     this._addEventListeners();
     this._initVoiceController();
+    this._initHandTracker();
     this._animate();
 
     // Enable WebXR
@@ -148,18 +144,8 @@ export class XRVisualizer {
 
       // Hand tracking setup
       if (session && session.inputSources) {
-        session.addEventListener('inputsourceschange', this._onInputSourcesChange.bind(this));
-        // Add hand models for any hands present
-        for (const inputSource of session.inputSources) {
-          if (inputSource.hand) {
-            const handedness = inputSource.handedness;
-            if (!this.handModels[handedness]) {
-              const handModel = this.handModelFactory.createHandModel(inputSource);
-              this.handModels[handedness] = handModel;
-              this.scene.add(handModel);
-            }
-          }
-        }
+        // Setup hand tracking with the new hand tracker
+        this.handTracker.setupHandTracking(session);
       }
     });
 
@@ -175,6 +161,11 @@ export class XRVisualizer {
         this.reticle.geometry.dispose();
         this.reticle.material.dispose();
         this.reticle = null;
+      }
+
+      // Cleanup hand tracking
+      if (this.handTracker) {
+        this.handTracker.cleanupHandTracking();
       }
 
       // Restore virtual environment when leaving AR
@@ -204,6 +195,55 @@ export class XRVisualizer {
     this.voiceController.onError = (error) => {
       console.error('Voice control error:', error);
     };
+  }
+
+  _initHandTracker() {
+    // Initialize hand tracker after scene is set up
+    this.handTracker = new HandTracker(this.scene, this.renderer);
+    
+    // Set up event handlers for hand tracking
+    this.handTracker.onPinchStart = (handedness, position) => {
+      this._onHandPinchStart(handedness, position);
+    };
+    
+    this.handTracker.onPinchEnd = (handedness) => {
+      this._onHandPinchEnd(handedness);
+    };
+    
+    this.handTracker.onGrabObject = (handedness, position) => {
+      this._onHandGrabObject(handedness, position);
+    };
+    
+    this.handTracker.onReleaseObject = (handedness) => {
+      this._onHandReleaseObject(handedness);
+    };
+  }
+
+  // Hand tracking event handlers
+  _onHandPinchStart(handedness, position) {
+    console.log(`Hand pinch started: ${handedness}`, position);
+  }
+
+  _onHandPinchEnd(handedness) {
+    console.log(`Hand pinch ended: ${handedness}`);
+  }
+
+  _onHandGrabObject(handedness, position) {
+    // Spawn a new object from loaded models when pinching
+    if (!this.handTracker.getGrabbedObject() && this.loadedModels.length > 0) {
+      const randomIndex = Math.floor(Math.random() * this.loadedModels.length);
+      const newObject = this.loadedModels[randomIndex].clone();
+      newObject.position.set(position.x, position.y, position.z);
+      newObject.scale.setScalar(0.5);
+      this.scene.add(newObject);
+      this.handTracker.setGrabbedObject(newObject);
+      
+      console.log(`Grabbed object with ${handedness} hand`);
+    }
+  }
+
+  _onHandReleaseObject(handedness) {
+    console.log(`Released object with ${handedness} hand`);
   }
 
   _handleVoiceCommand(text, command) {
@@ -253,7 +293,7 @@ export class XRVisualizer {
       // Show available models if no match found
       const availableModels = this._getAvailableModels().join(', ');
       if (window.showMessage) {
-        window.showMessage(`Available models: ${availableModels}. Or say "place", "clear sky", etc.`);
+        window.showMessage(`Available models: ${availableModels}. Or say "place" etc.`);
       }
     }
   }
@@ -444,7 +484,9 @@ export class XRVisualizer {
       }
 
       // Hand tracking update
-      this._updateHandTracking(frame);
+      if (this.handTracker) {
+        this.handTracker.updateHandTracking(frame);
+      }
 
       // Controller input update (for voice control B button)
       if (this.voiceController && this.renderer.xr.isPresenting) {
@@ -925,103 +967,6 @@ export class XRVisualizer {
         );
       }
       if (window.showMessage) window.showMessage('Placed desk');
-    }
-  }
-
-  _onInputSourcesChange(event) {
-    const session = this.renderer.xr.getSession();
-    if (session) {
-      for (const inputSource of session.inputSources) {
-        if (inputSource.hand) {
-          const handedness = inputSource.handedness;
-          if (!this.handModels[handedness]) {
-            const handModel = this.handModelFactory.createHandModel(inputSource);
-            this.handModels[handedness] = handModel;
-            this.scene.add(handModel);
-          }
-        }
-      }
-    }
-  }
-
-  // Pinch detection and object spawn/hold
-  _updateHandTracking(frame) {
-    if (!this.renderer.xr.isPresenting) return;
-    const session = this.renderer.xr.getSession();
-    if (!session) return;
-    for (const [handedness, handModel] of Object.entries(this.handModels)) {
-      if (!handModel) continue;
-      const inputSource = Array.from(session.inputSources).find(
-        src => src.handedness === handedness && src.hand
-      );
-      if (inputSource && inputSource.hand) {
-        try {
-          const referenceSpace = this.renderer.xr.getReferenceSpace();
-          const framePose = frame.getPose(inputSource.hand.get('index-finger-tip'), referenceSpace);
-          if (framePose) {
-            const isPinching = this._detectPinch(inputSource.hand, frame, referenceSpace);
-            this._handlePinchGesture(handedness, isPinching, framePose.transform.position);
-          }
-        } catch (e) {}
-      }
-    }
-    this._updateGrabbedObject();
-  }
-
-  _detectPinch(hand, frame, referenceSpace) {
-    try {
-      const thumbTip = frame.getPose(hand.get('thumb-tip'), referenceSpace);
-      const indexTip = frame.getPose(hand.get('index-finger-tip'), referenceSpace);
-      if (thumbTip && indexTip) {
-        const distance = new THREE.Vector3()
-          .subVectors(
-            new THREE.Vector3().fromArray([thumbTip.transform.position.x, thumbTip.transform.position.y, thumbTip.transform.position.z]),
-            new THREE.Vector3().fromArray([indexTip.transform.position.x, indexTip.transform.position.y, indexTip.transform.position.z])
-          ).length();
-        return distance < 0.03; // 3cm threshold for pinch
-      }
-    } catch (e) {}
-    return false;
-  }
-
-  _handlePinchGesture(handedness, isPinching, position) {
-    const wasPinching = this.lastPinchState[handedness];
-    this.pinchState[handedness] = isPinching;
-    if (isPinching && !wasPinching) {
-      this._onPinchStart(handedness, position);
-    } else if (!isPinching && wasPinching) {
-      this._onPinchEnd(handedness);
-    }
-    this.lastPinchState[handedness] = isPinching;
-  }
-
-  _onPinchStart(handedness, position) {
-    if (!this.grabbedObject && this.loadedModels.length > 0) {
-      // Spawn a new object from loaded models
-      const randomIndex = Math.floor(Math.random() * this.loadedModels.length);
-      const newObject = this.loadedModels[randomIndex].clone();
-      newObject.position.set(position.x, position.y, position.z);
-      newObject.scale.setScalar(0.5);
-      this.scene.add(newObject);
-      this.grabbedObject = newObject;
-      this.isHolding = true;
-    }
-  }
-
-  _onPinchEnd(handedness) {
-    if (this.grabbedObject && handedness === 'right') {
-      this.grabbedObject = null;
-      this.isHolding = false;
-    }
-  }
-
-  _updateGrabbedObject() {
-    if (this.grabbedObject && this.isHolding) {
-      // Update object position based on right hand
-      const rightHand = this.handModels.right;
-      if (rightHand) {
-        this.grabbedObject.position.copy(rightHand.position);
-      }
     }
   }
 }
