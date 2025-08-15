@@ -289,13 +289,6 @@ export class XRVisualizer {
         }
       }
     }
-    else {
-      // Show available models if no match found
-      const availableModels = this._getAvailableModels().join(', ');
-      if (window.showMessage) {
-        window.showMessage(`Available models: ${availableModels}. Or say "place" etc.`);
-      }
-    }
   }
 
   _matchObjectKeyword(command) {
@@ -321,10 +314,6 @@ export class XRVisualizer {
     }
     
     return null;
-  }
-
-  _getAvailableModels() {
-    return ['car', 'tree', 'cactus', 'bonfire', 'firework', 'toaster', 'flower', 'desk'];
   }
 
   _setupLighting() {

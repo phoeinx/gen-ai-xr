@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve static model files
+# Backup: serve static model files
 app.mount("/models", StaticFiles(directory="models"), name="models")
 
 # In-memory job storage (in production, use Redis or database)
@@ -120,40 +120,21 @@ async def debug_models():
         "available_models": AVAILABLE_MODELS,
         "model_count": len(AVAILABLE_MODELS)
     }
-    
+
     if os.path.exists(models_dir):
         all_files = os.listdir(models_dir)
         debug_info["all_files_in_models_dir"] = all_files
         debug_info["glb_files"] = [f for f in all_files if f.endswith('.glb')]
-    
-    return debug_info
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy", 
-        "timestamp": time.time(),
-        "models_loaded": len(AVAILABLE_MODELS),
-        "available_keywords": list(AVAILABLE_MODELS.keys())
-    }
+    return debug_info
 
 @app.get("/")
 async def root():
     return {
         "message": "3D Model Generator API",
-        "available_models": list(AVAILABLE_MODELS.keys()),
-        "model_files": list(AVAILABLE_MODELS.values()),
-        "total_models": len(AVAILABLE_MODELS)
-    }
+        "available_endpoints": [
 
-@app.get("/available-models")
-async def get_models():
-    """Get list of available models and their keywords"""
-    return {
-        "models": AVAILABLE_MODELS,
-        "count": len(AVAILABLE_MODELS),
-        "instructions": "Use filename (without .glb) as keyword in your prompt"
+        ]
     }
 
 @app.post("/generate-model", response_model=GenerateModelResponse)
