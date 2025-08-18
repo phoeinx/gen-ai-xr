@@ -246,74 +246,29 @@ export class XRVisualizer {
     console.log(`Released object with ${handedness} hand`);
   }
 
-  _handleVoiceCommand(text, command) {
+  async _handleVoiceCommand(text, command) {
     console.log('Voice command received:', command);
-    
-    // Enable keyboard for potential prompt mode
-    this.keyboardEnabled = true;
-    
-    // Check for object keywords first
-    const objectModel = this._matchObjectKeyword(command);
-    if (objectModel) {
-      // Use backend models path for most models, frontend assets for desk/flower
-      let modelPath;
-      if (objectModel === 'desk' || objectModel === 'flower') {
-        modelPath = `./assets/models/${objectModel}.glb`;
-      } else {
-        modelPath = `/api/models/${objectModel}.glb`; // Backend models via API proxy
-      }
-      
-      this._loadAndHoldObject(modelPath);
-      if (window.showMessage) {
-        window.showMessage(`✅ Loading ${objectModel}...`);
-      }
-      return;
-    }
-    
-    // Command patterns for specific actions
-    if (command.includes('spawn') && command.includes('flower')) {
-      this._spawnFlowerAtPlayerPosition();
-      if (window.showMessage) {
-        window.showMessage('Spawning flower via voice command');
-      }
-    }
-    else if (command.includes('place') || command.includes('drop') || command.includes('put down')) {
-      if (this.heldObject) {
-        this._spawnHeldObject();
-        if (window.showMessage) {
-          window.showMessage('Placing object via voice command');
-        }
-      } else {
-        if (window.showMessage) {
-          window.showMessage('No object to place. Say a model name first! (car, tree, cactus, etc.)');
-        }
-      }
-    }
-  }
 
-  _matchObjectKeyword(command) {
-    // Define available models and their keywords
-    const modelKeywords = {
-      'car': ['car', 'vehicle', 'automobile'],
-      'tree': ['tree', 'plant'],
-      'cactus': ['cactus', 'succulent'],
-      'bonfire': ['bonfire', 'fire', 'campfire'],
-      'firework': ['firework', 'fireworks', 'rocket'],
-      'toaster': ['toaster', 'toast'],
-      'flower': ['flower', 'bloom'],
-      'desk': ['desk', 'table']
-    };
-    
-    // Check each model for keyword matches
-    for (const [model, keywords] of Object.entries(modelKeywords)) {
-      for (const keyword of keywords) {
-        if (command.includes(keyword)) {
-          return model;
-        }
-      }
+    // Browser/frontend
+    const res = await fetch('/api/generate-model/text', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: text })
+    });
+
+    if (!res.ok) {
+      // 404: No static model match, 500: File missing on server
+      const msg = await res.text();
+      throw new Error(`Request failed: ${res.status} ${msg}`);
     }
-    
-    return null;
+
+    const data = await res.json();
+    // Prefer backend-provided absolute URL; fallback to API-proxied static path
+    const modelUrl = data.url || `/api/models/${encodeURIComponent(data.filename)}`;
+    this._loadAndHoldObject(modelUrl);
+    if (window.showMessage) {
+      window.showMessage(`✅ Loading ${data.filename}...`);
+    }
   }
 
   _setupLighting() {
@@ -339,9 +294,6 @@ export class XRVisualizer {
     const fillLight = new THREE.DirectionalLight(0x87ceeb, 0.2); // sky blue fill light
     fillLight.position.set(-20, 30, -10);
     this.scene.add(fillLight);
-
-    // No fog for clear visibility
-    // this.scene.fog = removed for clear sky
   }
 
   _addEventListeners() {
@@ -625,68 +577,52 @@ export class XRVisualizer {
     }, 100);
   }
 
-  async _generateObjectFromPrompt(prompt) {
+  async _generateObjectFromPrompt(promptText) {
     if (this.isGenerating) {
-      if (window.showMessage) {
-        window.showMessage('Already generating an object, please wait...');
-      }
+      console.warn('Already generating an object, ignoring new request');
       return;
     }
     
     this.isGenerating = true;
-    this.promptMode = false;
     
-    // Show immediate feedback
-    if (window.showMessage) {
-      window.showMessage(`🎯 Generating: "${prompt}"...`);
+    if (!promptText) {
+      console.warn('No prompt text provided, aborting generation');
+      this.isGenerating = false;
+      return;
     }
     
     try {
-      // Call backend API
-      const response = await fetch('/api/generate-model-direct', {
+      // Call backend API to generate model
+      const res = await fetch('/api/generate-model/text', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: prompt,
-          x: this.cameraRig.position.x,
-          z: this.cameraRig.position.z
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: promptText })
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      
+      if (!res.ok) {
+        throw new Error(`Request failed: ${res.status} ${await res.text()}`);
       }
-
-      const data = await response.json();
-      console.log('Model generated:', data);
-
+      
+      const data = await res.json();
+      console.log("data >>>", data)
+      const modelUrl = data.url || `/api/models/${encodeURIComponent(data.filename)}`;
+      console.log("modelUrl >>>", modelUrl)
+      // Load and hold the generated object
+      await this._loadAndHoldObject(modelUrl);
+      
+      // Show success message
       if (window.showMessage) {
-        window.showMessage('🎨 Object created! Loading into your hand...');
+        window.showMessage(`✅ Loaded ${data.filename}! Press G or say "place" to spawn it!`);
       }
-
-      // Load and hold the object - prepend /api for frontend proxy
-      const fullModelUrl = '/api' + data.model_url;
-      await this._loadAndHoldObject(fullModelUrl);
       
     } catch (error) {
       console.error('Error generating object:', error);
-      
       if (window.showMessage) {
-        window.showMessage(`❌ Generation failed: ${error.message}. Loading fallback object...`);
-      }
-      
-      // Fallback: load a default object
-      try {
-        await this._loadAndHoldObject('/api/models/crystal.glb'); // Fallback object
-      } catch (fallbackError) {
-        if (window.showMessage) {
-          window.showMessage('❌ Could not load any object. Check your connection.');
-        }
+        window.showMessage(`❌ Error generating object: ${error.message}`);
       }
     } finally {
       this.isGenerating = false;
+      this.promptMode = false; // Exit prompt mode
       this.keyboardEnabled = true; // Re-enable movement
     }
   }
@@ -901,61 +837,62 @@ export class XRVisualizer {
 
   // Place held object or desk at the reticle when selecting in AR
   _onARSelect() {
-    if (!this.isAR || !this.reticle || !this.reticle.visible) return;
+    // TODO: test if selection is working and implement
+    // if (!this.isAR || !this.reticle || !this.reticle.visible) return;
 
-    const target = new THREE.Vector3();
-    const quat = new THREE.Quaternion();
-    const scale = new THREE.Vector3();
-    this.reticle.matrix.decompose(target, quat, scale);
+    // const target = new THREE.Vector3();
+    // const quat = new THREE.Quaternion();
+    // const scale = new THREE.Vector3();
+    // this.reticle.matrix.decompose(target, quat, scale);
 
-    if (this.heldObject) {
-      // Place currently held object
-      this.camera.remove(this.heldObject);
-      this.heldObject.position.copy(target);
-      this.heldObject.rotation.set(0, Math.random() * Math.PI * 2, 0);
-      const s = (this.heldObject.userData?.originalScale || 1) * 2.5;
-      this.heldObject.scale.setScalar(s);
-      delete this.heldObject.userData?.holdingAnimation;
-      delete this.heldObject.userData?.originalScale;
-      this.scene.add(this.heldObject);
-      this.loadedModels.push(this.heldObject);
-      this.heldObject = null;
-      this._createSpawnEffect(target.x, target.z);
-      if (window.showMessage) window.showMessage('Placed object');
-    } else {
-      // Place or move the desk
-      const placeDesk = (desk) => {
-        desk.position.copy(target);
-        desk.rotation.y = Math.PI;
-        if (!this.centerDesk) {
-          this.centerDesk = desk;
-          this.scene.add(desk);
-        }
-        this.placedDesk = true;
-      };
+    // if (this.heldObject) {
+    //   // Place currently held object
+    //   this.camera.remove(this.heldObject);
+    //   this.heldObject.position.copy(target);
+    //   this.heldObject.rotation.set(0, Math.random() * Math.PI * 2, 0);
+    //   const s = (this.heldObject.userData?.originalScale || 1) * 2.5;
+    //   this.heldObject.scale.setScalar(s);
+    //   delete this.heldObject.userData?.holdingAnimation;
+    //   delete this.heldObject.userData?.originalScale;
+    //   this.scene.add(this.heldObject);
+    //   this.loadedModels.push(this.heldObject);
+    //   this.heldObject = null;
+    //   this._createSpawnEffect(target.x, target.z);
+    //   if (window.showMessage) window.showMessage('Placed object');
+    // } else {
+    //   // Place or move the desk
+    //   const placeDesk = (desk) => {
+    //     desk.position.copy(target);
+    //     desk.rotation.y = Math.PI;
+    //     if (!this.centerDesk) {
+    //       this.centerDesk = desk;
+    //       this.scene.add(desk);
+    //     }
+    //     this.placedDesk = true;
+    //   };
 
-      if (this.centerDesk) {
-        placeDesk(this.centerDesk);
-      } else {
-        this.gltfLoader.load(
-          './assets/models/desk.glb',
-          (gltf) => {
-            const desk = gltf.scene.clone();
-            desk.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
-            placeDesk(desk);
-          },
-          undefined,
-          () => {
-            // Fallback simple desk
-            const desk = new THREE.Group();
-            const top = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.04, 0.5), new THREE.MeshLambertMaterial({ color: 0x8b4513 }));
-            top.position.y = 0.75;
-            desk.add(top);
-            placeDesk(desk);
-          }
-        );
-      }
-      if (window.showMessage) window.showMessage('Placed desk');
-    }
+    //   if (this.centerDesk) {
+    //     placeDesk(this.centerDesk);
+    //   } else {
+    //     this.gltfLoader.load(
+    //       './assets/models/desk.glb',
+    //       (gltf) => {
+    //         const desk = gltf.scene.clone();
+    //         desk.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+    //         placeDesk(desk);
+    //       },
+    //       undefined,
+    //       () => {
+    //         // Fallback simple desk
+    //         const desk = new THREE.Group();
+    //         const top = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.04, 0.5), new THREE.MeshLambertMaterial({ color: 0x8b4513 }));
+    //         top.position.y = 0.75;
+    //         desk.add(top);
+    //         placeDesk(desk);
+    //       }
+    //     );
+    //   }
+    //   if (window.showMessage) window.showMessage('Placed desk');
+    // }
   }
 }

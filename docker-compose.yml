@@ -7,6 +7,7 @@ services:
       - "3000:80"
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
+      - ./frontend/nginx.conf:/etc/nginx/nginx.conf:ro   # add this
     depends_on:
       - backend
       - whisper
@@ -25,8 +26,8 @@ services:
       - "8000"
     restart: always
     volumes:
-      - ./backend/models:/app/models
       - ./backend/app:/app/app
+      - ./backend/data:/app/data
     environment:
       - PYTHONPATH=/app
       - ENVIRONMENT=development

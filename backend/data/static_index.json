@@ -1,0 +1,29 @@
+{
+    "bonfire.glb": [
+        "bonfire",
+        "fire"
+    ],
+    "flower.glb": [
+        "flower",
+        "plant",
+        "bloom",
+        "rose",
+        "tulip"
+    ],
+    "cactus.glb": [
+        "cactus"
+    ],
+    "car.glb": [
+        "car"
+    ],
+    "firework.glb": [
+        "firework",
+        "rocket"
+    ],
+    "toaster.glb": [
+        "toaster"
+    ],
+    "tree.glb": [
+        "tree"
+    ]
+}
