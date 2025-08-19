@@ -8,7 +8,11 @@ from pydantic import BaseModel
 from PIL import Image
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker, declarative_base
-from pathlib import Path
+from dotenv import load_dotenv
+import replicate
+
+# Load environment variables from .env file
+load_dotenv()
 
 # ---- Config ----
 DATA_DIR = os.getenv("DATA_DIR", "data")
@@ -19,9 +23,12 @@ STATIC_INDEX_PATH = os.path.join(DATA_DIR, "static_index.json")
 EXTERNAL_API_URL = os.getenv(
     "EXTERNAL_API_URL", "http://external-model/api/generate"
 )  # replace when ready
+REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
+os.environ["REPLICATE_API_TOKEN"] = REPLICATE_API_TOKEN  # Set for replicate client
 
 os.makedirs(MODELS_DIR, exist_ok=True)
 os.makedirs(UPLOADS_DIR, exist_ok=True)
+os.makedirs(STATIC_MODELS_DIR, exist_ok=True)
 
 # ---- DB (SQLite) ----
 DB_PATH = os.getenv("DB_PATH", os.path.join(DATA_DIR, "app.db"))
@@ -118,8 +125,26 @@ def call_external_model(image_path: str) -> bytes:
       resp.raise_for_status()
       return resp.content
     """
-    time.sleep(30)  # simulate long generation
-    return b"glTFbinary...placeholder..."  # your .glb bytes
+    output = replicate.run(
+        "firtoz/trellis:e8f6c45206993f297372f5436b90350817bd9b4a0d52d2a76df50c1c8afa2b3c",
+        input={
+            "seed": 0,
+            "images": [open(image_path, "rb")],
+            "texture_size": 2048,
+            "mesh_simplify": 0.9,
+            "generate_color": True,
+            "generate_model": True,
+            "randomize_seed": True,
+            "generate_normal": False,
+            "save_gaussian_ply": True,
+            "ss_sampling_steps": 38,
+            "slat_sampling_steps": 12,
+            "return_no_background": False,
+            "ss_guidance_strength": 7.5,
+            "slat_guidance_strength": 3,
+        },
+    )
+    return output["model_file"].read()
 
 
 def safe_filename(stem: str, ext=".glb") -> str:
@@ -185,7 +210,7 @@ def generate_model_text(req: TextReq, request: Request):
 
 @app.post("/generate-model/image")
 async def generate_model_image(
-    background: BackgroundTasks, request: Request, file: UploadFile = File(...)
+    background: BackgroundTasks, file: UploadFile = File(...)
 ):
     raw = await file.read()
     if not raw or len(raw) > 15 * 1024 * 1024:
@@ -202,8 +227,7 @@ async def generate_model_image(
     try:
         cached = session.get(ImageCache, h)
         if cached:
-            base = str(request.base_url).rstrip("/")
-            url = f"{base}/models/{cached.filename}"
+            url = f"/api/models/{cached.filename}"
             return {"filename": cached.filename, "url": url, "source": "cache"}
 
         # Create task, enqueue background work
@@ -237,42 +261,49 @@ def task_status(task_id: str, request: Request):
 
 
 # ---- NEW: SSE endpoint for task updates ----
+# ...existing code...
 @app.get("/tasks/{task_id}/events")
 async def task_events(task_id: str, request: Request):
+
     async def event_gen():
-        session = SessionLocal()
         last_status = None
-        try:
-            # Send an initial retry hint for SSE reconnects
-            yield "retry: 3000\n\n"
-            while True:
-                if await request.is_disconnected():
-                    break
+        # Hint client to retry quickly
+        yield "retry: 3000\n\n"
+        while True:
+            if await request.is_disconnected():
+                break
+
+            session = SessionLocal()
+            try:
                 t = session.get(Task, task_id)
                 if not t:
-                    yield "event: error\n" + f"data: {json.dumps({'error':'Task not found'})}\n\n"
+                    yield 'event: status\ndata: {"status":"not_found"}\n\n'
                     break
 
                 if t.status != last_status:
                     payload = {"status": t.status}
                     if t.status == "finished":
                         payload["filename"] = t.filename
+                        payload["url"] = f"/api/models/{t.filename}"
                     if t.status == "failed":
                         payload["error"] = t.error
-                    yield "event: status\n" + f"data: {json.dumps(payload)}\n\n"
+                    yield f"event: status\ndata: {json.dumps(payload)}\n\n"
                     last_status = t.status
 
                 if t.status in ("finished", "failed"):
                     break
+            finally:
+                session.close()
 
-                # lightweight polling + heartbeat comment (keeps proxies from closing)
-                await asyncio.sleep(1.5)
-                yield ": keep-alive\n\n"
-        finally:
-            session.close()
+            # Heartbeat + cadence
+            yield ": keep-alive\n\n"
+            await asyncio.sleep(0.5)
 
-    return StreamingResponse(event_gen(), media_type="text/event-stream")
-
+    return StreamingResponse(
+        event_gen(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},  # for nginx
+    )
 
 @app.get("/download-model")
 def download_model(filename: str):
@@ -281,16 +312,14 @@ def download_model(filename: str):
     if not os.path.exists(path):
         raise HTTPException(404, "File not found")
     # Use appropriate media type for GLB
-    return FileResponse(path, filename=safe, media_type="model/gltf-binary")
+    return {
+        "filename": safe,
+        "url": f"/api/static_models/{safe}",
+        "source": "generated",
+    }
 
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "timestamp": time.time()}
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8000)

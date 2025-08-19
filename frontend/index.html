@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -122,19 +123,19 @@
         font-size: 1.5rem;
         top: 15px;
       }
-      
+
       .description {
         top: 60px;
         font-size: 0.9rem;
         width: 95%;
       }
-      
+
       .iframe-container {
         width: 95%;
         height: 55%;
         top: 70%;
       }
-      
+
       .fullscreen-btn {
         font-size: 10px;
         padding: 6px 10px;
@@ -142,6 +143,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="header">Gen-AI + AR</div>
   <div class="description">
@@ -181,7 +183,7 @@
         fullscreenBtn.textContent = '⛶ Fullscreen';
         isFullscreen = false;
       }
-      
+
       // Notify iframe about resize after a short delay to ensure CSS transition completes
       setTimeout(() => {
         const iframe = document.querySelector('iframe');
@@ -211,9 +213,9 @@
 
     // Expose function globally for external use
     window.loadContent = loadContent;
-    
+
     // Expose function to send commands to visualization
-    window.sendVisCommand = function(command, value) {
+    window.sendVisCommand = function (command, value) {
       const iframe = document.querySelector('iframe');
       if (iframe && iframe.contentWindow) {
         iframe.contentWindow.postMessage({
@@ -230,4 +232,5 @@
     });
   </script>
 </body>
+
 </html>

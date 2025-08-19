@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Visualization</title>
-  
+
   <!-- Import map for Three.js -->
   <script type="importmap">
     {
@@ -15,18 +16,20 @@
     }
   </script>
   <style>
-    html, body {
+    html,
+    body {
       margin: 0;
       padding: 0;
       height: 100%;
       overflow: hidden;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
+
     #vis-container {
       width: 100%;
       height: 100%;
     }
-    
+
     #vis-controls {
       position: absolute;
       top: 10px;
@@ -40,14 +43,14 @@
       font-size: 12px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
-    
+
     #vis-controls label {
       display: block;
       margin-bottom: 5px;
       color: #555555;
       font-weight: 500;
     }
-    
+
     #vis-controls input {
       background: #ffffff;
       border: 1px solid #cccccc;
@@ -56,7 +59,7 @@
       border-radius: 3px;
       width: 60px;
     }
-    
+
     .instructions {
       position: absolute;
       bottom: 10px;
@@ -70,7 +73,7 @@
       max-width: 200px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
-    
+
     .prompt-overlay {
       position: absolute;
       top: 0;
@@ -83,7 +86,7 @@
       align-items: center;
       z-index: 1000;
     }
-    
+
     .prompt-container {
       background: #ffffff;
       border: 2px solid #e0e0e0;
@@ -92,14 +95,14 @@
       text-align: center;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     }
-    
+
     .prompt-title {
       color: #555555;
       font-size: 18px;
       margin-bottom: 20px;
       font-weight: 500;
     }
-    
+
     .prompt-input {
       width: 400px;
       padding: 12px 16px;
@@ -112,24 +115,24 @@
       text-align: center;
       outline: none;
     }
-    
+
     .prompt-input::placeholder {
       color: #aaaaaa;
       font-style: italic;
     }
-    
+
     .prompt-input:focus {
       border-color: #cccccc;
       box-shadow: 0 0 8px rgba(204, 204, 204, 0.3);
     }
-    
+
     .prompt-hint {
       color: #888888;
       font-size: 12px;
       margin-top: 10px;
       font-style: italic;
     }
-    
+
     .message-display {
       position: absolute;
       top: 20px;
@@ -148,8 +151,9 @@
     }
   </style>
 </head>
+
 <body>
-  
+
   <div class="instructions">
     <strong>Instructions:</strong><br>
     Use WASD to walk through the environment.<br>
@@ -163,13 +167,8 @@
   <div class="prompt-overlay" id="promptOverlay">
     <div class="prompt-container">
       <div class="prompt-title">Describe what you want to create</div>
-      <input 
-        type="text" 
-        id="promptInput" 
-        class="prompt-input" 
-        placeholder="Describe what you wish to create..."
-        maxlength="100"
-      />
+      <input type="text" id="promptInput" class="prompt-input" placeholder="Describe what you wish to create..."
+        maxlength="100" />
       <div class="prompt-hint">Press Enter to conjure • Press Escape to cancel</div>
     </div>
   </div>
@@ -177,18 +176,23 @@
   <div class="message-display" id="messageDisplay"></div>
 
   <div id="vis-container"></div>
-  
+
+  <div id="vis-controls" style="position:absolute;top:10px;right:10px;z-index:200;">
+    <button id="uploadBtn">Upload Image (Web)</button>
+    <input id="fileInput" type="file" accept="image/*" style="display:none" />
+  </div>
+
   <script>
     // Global functions for prompt system
-              let visualizer;
-    
+    let visualizer;
+
     function showPromptInput() {
       const overlay = document.getElementById('promptOverlay');
       const input = document.getElementById('promptInput');
-      
+
       overlay.style.display = 'flex';
       input.value = ''; // Clear any existing content
-      
+
       // Use setTimeout to ensure the 'g' key doesn't get captured
       setTimeout(() => {
         input.focus();
@@ -204,14 +208,14 @@
     function submitPrompt() {
       const input = document.getElementById('promptInput');
       const prompt = input.value.trim();
-      
+
       if (prompt) {
         // Send prompt directly to the visualization (no iframe here)
         if (visualizer && visualizer._generateObjectFromPrompt) {
           visualizer._generateObjectFromPrompt(prompt);
         }
       }
-      
+
       hidePromptInput();
     }
 
@@ -219,12 +223,90 @@
       const messageDisplay = document.getElementById('messageDisplay');
       messageDisplay.textContent = message;
       messageDisplay.style.display = 'block';
-      
+
       // Auto-hide after duration
       setTimeout(() => {
         messageDisplay.style.display = 'none';
       }, duration);
     }
+
+    async function uploadImageFile(file) {
+      try {
+        if (!file) return;
+        const fd = new FormData();
+        fd.append('file', file);
+
+        const res = await fetch('/api/generate-model/image', {
+          method: 'POST',
+          body: fd
+        });
+        if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+        const data = await res.json();
+
+        // Cache hit: direct URL
+        if (data.url) {
+          await visualizer._loadAndHoldObject(data.url);
+          window.showMessage?.(`✅ Loaded ${data.filename}. Press G to place.`);
+          return;
+        }
+
+        // Background task: wait via SSE
+        if (data.task_id) {
+          await waitForTaskAndLoad(data.task_id);
+        }
+      } catch (err) {
+        console.error('Upload failed:', err);
+        window.showMessage?.('❌ Upload failed.');
+      }
+    }
+
+    function waitForTaskAndLoad(taskId) {
+      return new Promise((resolve, reject) => {
+        const es = new EventSource(`/api/tasks/${encodeURIComponent(taskId)}/events`);
+
+        es.addEventListener('status', async (ev) => {
+          const payload = JSON.parse(ev.data || '{}');
+          if (payload.status === 'finished') {
+            es.close();
+            // Build proxied URL for models
+            const modelUrl = `/api/models/${encodeURIComponent(payload.filename)}`;
+            try {
+              await visualizer._loadAndHoldObject(modelUrl);
+              window.showMessage?.(`✅ Loaded ${payload.filename}. Press G to place.`);
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
+          } else if (payload.status === 'failed') {
+            es.close();
+            reject(new Error(payload.error || 'Generation failed'));
+          }
+        });
+
+        es.addEventListener('error', () => {
+          es.close();
+          reject(new Error('SSE connection error'));
+        });
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const uploadBtn = document.getElementById('uploadBtn');
+      const fileInput = document.getElementById('fileInput');
+
+      uploadBtn.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', () => {
+        const file = fileInput.files?.[0];
+        if (file) uploadImageFile(file);
+        fileInput.value = ''; // reset for next pick
+      });
+
+      // Hide control during XR sessions (optional)
+      window.addEventListener('xr:sessionstate', (e) => {
+        const presenting = !!e.detail?.presenting;
+        document.getElementById('vis-controls').style.display = presenting ? 'none' : 'block';
+      });
+    });
 
     // Make functions globally available
     window.showPromptInput = showPromptInput;
@@ -232,24 +314,24 @@
     window.submitPrompt = submitPrompt;
     window.showMessage = showMessage;
   </script>
-  
+
   <script type="module">
-          import { XRVisualizer } from './XRViz.js';
+    import { XRVisualizer } from './XRViz.js';
 
     const container = document.getElementById('vis-container');
-              visualizer = new XRVisualizer(container);
+    visualizer = new XRVisualizer(container);
 
-        window.addEventListener('message', (event) => {
-          const data = event.data;
-          if (!data || typeof data !== 'object') return;
+    window.addEventListener('message', (event) => {
+      const data = event.data;
+      if (!data || typeof data !== 'object') return;
 
-        switch (data.type) {
-          case 'resize-viewport':
-            if (visualizer && visualizer.handleResize) {
-              setTimeout(() => {
-                visualizer.handleResize();
-              }, 50);
-            }
+      switch (data.type) {
+        case 'resize-viewport':
+          if (visualizer && visualizer.handleResize) {
+            setTimeout(() => {
+              visualizer.handleResize();
+            }, 50);
+          }
           break;
 
         case 'show-prompt':
@@ -270,7 +352,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       const promptInput = document.getElementById('promptInput');
       const promptOverlay = document.getElementById('promptOverlay');
-      
+
       promptInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -280,7 +362,7 @@
           hidePromptInput();
         }
       });
-      
+
       promptOverlay.addEventListener('click', (e) => {
         if (e.target === promptOverlay) {
           hidePromptInput();
@@ -292,4 +374,5 @@
     window.parent.postMessage({ type: 'vis-ready' }, '*');
   </script>
 </body>
+
 </html>

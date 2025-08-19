@@ -11,6 +11,9 @@ export class WhisperClient {
         this.isRecording = false;
         this.mediaRecorder = null;
         this.audioChunks = [];
+        this.chunkMs = 250;
+        this.maxBufferedBytes = 1_000_000;
+        this.streaming = false;
         
         // Event callbacks
         this.onTranscription = null;
