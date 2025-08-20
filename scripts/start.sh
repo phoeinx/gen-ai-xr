@@ -12,7 +12,7 @@ fi
 
 # Build and start containers
 echo "🏗️  Building and starting containers..."
-docker-compose up --build -d
+docker compose up --build -d
 
 # Wait for services to be ready
 echo "⏳ Waiting for services to start..."
